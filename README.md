@@ -10,6 +10,17 @@ For more details, please refer to our paper:
 
 **Neural Annotation Refinement: Development of a New 3D Dataset for Adrenal Gland Analysis** ([arXiv](https://arxiv.org/abs/2206.15328))
 
+## Data 
+Download ALAN dataset and Synthetic data [here](https://drive.google.com/drive/folders/1DpUjb1NFiZkyeAII_Dvvn0iO_QIqkU-E?usp=share_link). There are two directories in this link:
+* `synthetic_data`: the adrenal gland subset of AbdomenCT-1K
+    * `appearance`: image appearance
+    * `mask_gt`: ground truth annotation
+    * `mask_distorted`: distorted annotation
+    * `mask_near_refined`: annotation refined with NeAR method
+* `ALAN`: a new 3D dataset for Adrenal gLand ANalysis
+    * `ALAN`: 1,584 cases of NeAR-repaired, high-quality 3D models of adrenal glands
+    * `info.csv`: diagnosis labels
+
 
 ## Code Structure
 
