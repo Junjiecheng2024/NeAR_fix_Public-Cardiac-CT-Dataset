@@ -1,15 +1,22 @@
 # NeAR
-[MICCAI'22] Neural Annotation Refinement: Development of a New 3D Dataset for Adrenal Gland Analysis
+## Data ([Google Drive](https://drive.google.com/drive/folders/1DpUjb1NFiZkyeAII_Dvvn0iO_QIqkU-E?usp=share_link)) | Paper ([arXiv](https://arxiv.org/abs/2206.15328), [Springer](https://link.springer.com/chapter/10.1007/978-3-031-16440-8_48))
+Jiancheng Yang, Rui Shi, Udaranga Wickramasinghe, Qikui Zhu, Bingbing Ni, Pascal Fua
+
+![NeAR_overview](https://raw.githubusercontent.com/M3DV/NeAR/main/assets/overview.jpg)
 
 The human annotations are imperfect, especially when produced by junior practitioners. Multi-expert consensus is usually regarded as golden standard, while this annotation protocol is too expensive to implement in many real-world projects. In this study, we propose a method to refine human annotation, named Neural Annotation Refinement (NeAR). It is based on a learnable implicit function, which decodes a latent vector into represented shape. By integrating the appearance as an input of implicit functions, the appearance-aware NeAR fixes the annotation artefacts. Our method is demonstrated on the application of adrenal gland analysis. We first show that the NeAR can repair distorted golden standards on a public adrenal gland segmentation dataset. Besides, we develop a new Adrenal gLand ANalysis (ALAN) dataset with the proposed NeAR, where each case consists of a 3D shape of adrenal gland and its diagnosis label (normal vs. abnormal) assigned by experts. We show that models trained on the shapes repaired by the NeAR can diagnose adrenal glands better than the original ones. The ALAN dataset will be open-source, with 1,584 shapes for adrenal gland diagnosis, which serves as a new benchmark for medical shape analysis. 
 
+For more details, please refer to our paper:
+
+**Neural Annotation Refinement: Development of a New 3D Dataset for Adrenal Gland Analysis** ([arXiv](https://arxiv.org/abs/2206.15328))
+
 
 ## Code Structure
+
 * [`near/`](./near/):
     * [`datasets/`](./near/datasets/): PyTorch datasets and dataloaders of ALAN.
     * [`models/`](./near/models/): model scripts of NeAR.
     * [`utils/`](./near/utils/)
-
 * [`repairing/`](./repairing/):
     * [`near_repairing/`](./repairing/near_repairing/): NeAR repairing scripts.
     * [`seg_repairing/`](./repairing/seg_repairing/): counterparts (Seg-UNet and Seg-FCN) repairing scripts. 
@@ -26,7 +33,9 @@ Modify `AlanDataset` in [`near_repair.py`](./repairing/near_repairing/near_repai
 Assign parameters in [`config_near.py`](./repairing/near_repairing/config_near.py) or use the default parameters
 
 Run the script in terminal: 
-`$ python ./repairing/near_repairing/near_repair.py`
+
+    >>> python ./repairing/near_repairing/near_repair.py
+
 
 ## Reference
 If you find this project useful in your research, please cite the following paper:
