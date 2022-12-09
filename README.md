@@ -1,6 +1,6 @@
 # NeAR
-## Data ([Google Drive](https://drive.google.com/drive/folders/1DpUjb1NFiZkyeAII_Dvvn0iO_QIqkU-E?usp=share_link)) | Paper ([arXiv](https://arxiv.org/abs/2206.15328), [Springer](https://link.springer.com/chapter/10.1007/978-3-031-16440-8_48))
-Jiancheng Yang, Rui Shi, Udaranga Wickramasinghe, Qikui Zhu, Bingbing Ni, Pascal Fua
+## Data ([Google Drive](https://drive.google.com/drive/folders/1DpUjb1NFiZkyeAII_Dvvn0iO_QIqkU-E?usp=share_link)) | Paper ([arXiv](https://arxiv.org/abs/2206.15328), [MICCAI'22](https://link.springer.com/chapter/10.1007/978-3-031-16440-8_48))
+[Jiancheng Yang](https://jiancheng-yang.com/), Rui Shi, Udaranga Wickramasinghe, Qikui Zhu, [Bingbing Ni](https://scholar.google.com/citations?user=eUbmKwYAAAAJ), [Pascal Fua](https://people.epfl.ch/pascal.fua)
 
 ![NeAR_overview](https://raw.githubusercontent.com/M3DV/NeAR/main/assets/overview.jpg)
 
