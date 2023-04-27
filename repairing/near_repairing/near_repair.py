@@ -44,7 +44,10 @@ def train_epoch(model, optimizer, loader,
     for _, (indices, shape, appearance) in enumerate(loader):
         indices = to_var(indices)
         _, grids, labels = gather_fn(shape)
-        _, _, appearance_label = gather_fn(appearance)
+        # Note there are grid noises during the training. 
+        # Therefore, the `appearance_label` could not align with the `labels` (with sight shift), which could serve as a data augmentation.
+        # However, if your images are high-res, this shift will be large. If so, you can align them by concatenating then split.
+        _, _, appearance_label = gather_fn(appearance) 
 
         pred_logit_shape, encoded = model(indices, grids, appearance_label)
 
