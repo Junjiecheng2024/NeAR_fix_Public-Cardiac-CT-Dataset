@@ -1,3 +1,14 @@
+"""
+原始NeAR配置文件（多类+appearance）
+
+说明：
+- 数据集：Alan腹部器官数据集
+- 模式：NeAR(S+A) - Shape + Appearance
+- 用途：参考原始论文实现，不用于当前心脏项目
+
+注意：当前项目使用 config_coronary.py（单类shape-only）
+"""
+
 cfg = dict()
 
 cfg["base_path"] = "./checkpoints"

@@ -1,0 +1,32 @@
+Coronary Refinement Evaluation - Sample 1
+======================================================================
+
+Checkpoint: ../repairing/near_repairing/checkpoints/Coronary_class9_shape_only_251108_183434/best.pth
+Resolution: 256³
+
+Connected Components:
+  Original: 2 CCs
+  Refined:  2 CCs
+  Change:   0
+
+Volumetric Dice Coefficient: 0.0019
+
+Surface Dice (at different tolerances):
+  0.5mm: 0.0089
+  1.0mm: 0.0195
+  2.0mm: 0.0324
+  3.0mm: 0.0505
+
+Average Surface Distances (1mm tolerance):
+  Original → Refined: 4.988 mm
+  Refined → Original: 46.488 mm
+  Mean:               25.738 mm
+
+Voxel Counts:
+  Original: 23,969
+  Refined:  3,376,050
+
+Volume Occupancy:
+  Original ratio: 0.1429%
+  Refined ratio:  20.1228%
+  Change:         +19.9800% (+13985.07%)

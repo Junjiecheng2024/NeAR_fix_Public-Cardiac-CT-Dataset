@@ -1,0 +1,15 @@
+
+======================================================================
+Inference for Coronary
+Checkpoint: checkpoints/Coronary_class9_shape_only_251109_092755/best.pth
+Output directory: inference_results
+Total samples: 998
+Resolution: 256
+Threshold: 0.5
+======================================================================
+
+Loading model...
+Model loaded successfully!
+
+Generating refined masks...
+  0%|          | 0/998 [00:00<?, ?it/s]

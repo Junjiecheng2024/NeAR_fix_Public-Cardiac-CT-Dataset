@@ -1,0 +1,9 @@
+usage: inference_coronary.py [-h] --checkpoint CHECKPOINT
+                             --output_dir OUTPUT_DIR [--data_path DATA_PATH]
+                             [--class_name CLASS_NAME]
+                             [--resolution RESOLUTION]
+                             [--latent_dimension LATENT_DIMENSION]
+                             [--decoder_channels DECODER_CHANNELS [DECODER_CHANNELS ...]]
+                             [--batch_size BATCH_SIZE] [--threshold THRESHOLD]
+                             [--save_prob]
+inference_coronary.py: error: the following arguments are required: --output_dir

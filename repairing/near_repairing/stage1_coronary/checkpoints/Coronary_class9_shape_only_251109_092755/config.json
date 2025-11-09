@@ -1,0 +1,39 @@
+{
+    "base_path": "./checkpoints",
+    "run_flag": "Coronary_class9_shape_only_251109_092755",
+    "data_path": "../../../../dataset/near_format_data",
+    "class_name": "Coronary",
+    "class_index": 9,
+    "n_epochs": 300,
+    "appearance": false,
+    "decoder_channels": [
+        64,
+        48,
+        32,
+        16
+    ],
+    "latent_dimension": 256,
+    "training_resolution": 64,
+    "target_resolution": 128,
+    "n_training_samples": null,
+    "lr": 0.001,
+    "batch_size": 2,
+    "gradient_accumulation_steps": 2,
+    "eval_batch_size": 2,
+    "n_workers": 8,
+    "use_cosine_schedule": false,
+    "milestones": [
+        100,
+        200
+    ],
+    "gamma": 0.5,
+    "warmup_ratio": 0.01,
+    "use_amp": true,
+    "eval_interval": 10,
+    "grid_noise": 0,
+    "uniform_grid_noise": true,
+    "sampling_bias_ratio": 0.5,
+    "sampling_dilation_radius": 2,
+    "l2_penalty_weight": 0.0001,
+    "resume_checkpoint": "./checkpoints/Coronary_class9_shape_only_251109_061814/best.pth"
+}
