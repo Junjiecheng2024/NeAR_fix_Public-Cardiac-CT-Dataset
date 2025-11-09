@@ -1,3 +1,19 @@
+"""
+原始NeAR修复脚本（多类、带appearance）
+
+功能说明：
+1. 这是原始NeAR论文的训练脚本，支持多类+appearance模式
+2. 数据集：AlanDataset / AbdomenCTDataset（非心脏数据）
+3. 模型：EmbeddingDecoder（包含appearance分支）
+4. 与阶段一的区别：
+   - 阶段一：单类 + shape-only + 心脏冠状动脉
+   - 此脚本：多类 + appearance + 腹部器官
+
+用途：参考原始实现，不直接用于当前项目
+
+Original NeAR repair script for multi-class with appearance.
+"""
+
 import _init_paths_local
 
 import os
