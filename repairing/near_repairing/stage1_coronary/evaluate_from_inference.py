@@ -83,7 +83,11 @@ def evaluate_single_sample(sample_id, inference_dir, data_root, class_index=9):
     print(f"{'='*70}")
     
     # Load refined mask from inference
+    # Try both naming conventions
     refined_path = os.path.join(inference_dir, f'{sample_id}.npy')
+    if not os.path.exists(refined_path):
+        refined_path = os.path.join(inference_dir, f'{sample_id}_refined.npy')
+    
     if not os.path.exists(refined_path):
         print(f"Error: Refined mask not found at {refined_path}")
         return None
@@ -177,17 +181,23 @@ def main():
     if args.sample_ids:
         sample_ids = args.sample_ids
     else:
-        inference_files = sorted([f for f in os.listdir(args.inference_dir) if f.endswith('.npy')])
+        # Look for both naming conventions
+        inference_files = [f for f in os.listdir(args.inference_dir) 
+                          if f.endswith('.npy') or f.endswith('_refined.npy')]
         # Filter out non-numeric filenames
         sample_ids = []
         for f in inference_files:
             try:
-                sample_id = int(f.replace('.npy', ''))
+                # Handle both "123.npy" and "123_refined.npy"
+                name = f.replace('_refined.npy', '').replace('.npy', '')
+                sample_id = int(name)
                 sample_ids.append(sample_id)
                 if len(sample_ids) >= args.num_samples:
                     break
             except ValueError:
                 continue  # Skip non-numeric filenames
+        
+        sample_ids = sorted(list(set(sample_ids)))[:args.num_samples]
     
     print(f"\n{'='*70}")
     print(f"Evaluating {len(sample_ids)} samples from inference results")
