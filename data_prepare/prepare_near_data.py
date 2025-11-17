@@ -14,13 +14,13 @@ import warnings
 warnings.filterwarnings('ignore')
 
 DEFAULT_CONFIG = {
-    # "image_dir": "/home/user/persistent/NeAR_fix_Public-Cardiac-CT-Dataset/dataset/bboxed/images",  # Not needed for shape-only
-    "seg_dir": "/home/user/persistent/NeAR_fix_Public-Cardiac-CT-Dataset/dataset/bboxed/segmentations",
-    "output_root": "/home/user/persistent/NeAR_fix_Public-Cardiac-CT-Dataset/dataset/near_format_data",
+    "image_dir": "/scratch/project_2016517/junjie/dataset/bboxed/images",  
+    "seg_dir": "/scratch/project_2016517/junjie/dataset/bboxed/segmentations",
+    "output_root": "/scratch/project_2016517/junjie/dataset/near_format_data",
     "target_resolution": (256, 256, 256),
-    # "hu_min": -200,  # Not needed for shape-only
-    # "hu_max": 500,   # Not needed for shape-only
-    # "normalize_method": "minmax",  # Not needed for shape-only
+    "hu_min": -200,  # Not needed for shape-only
+    "hu_max": 500,   # Not needed for shape-only
+    "normalize_method": "minmax",  # Not needed for shape-only
     "num_classes": 11,
     "class_names": [
         "Background", "Myocardium", "LA", "LV", "RA", "RV",
@@ -144,7 +144,7 @@ def main(config):
     print("=" * 80)
     output_root = Path(config["output_root"])
     output_root.mkdir(parents=True, exist_ok=True)
-    # (output_root / "appearance").mkdir(exist_ok=True)  # Not needed for shape-only
+    (output_root / "appearance").mkdir(exist_ok=True)  # Not needed for shape-only
     (output_root / "shape").mkdir(exist_ok=True)
     case_ids = get_case_ids(config["seg_dir"])
     print(f"\nFound {len(case_ids)} samples")
@@ -210,20 +210,20 @@ def main(config):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="NeAR data preprocessing script (Shape-only mode)")
-    # parser.add_argument("--image_dir", type=str)  # Not needed for shape-only
+    parser.add_argument("--image_dir", type=str)  # Not needed for shape-only
     parser.add_argument("--seg_dir", type=str)
     parser.add_argument("--output_root", type=str)
     parser.add_argument("--target_resolution", type=str)
     parser.add_argument("--n_workers", type=int)
-    # parser.add_argument("--hu_min", type=int)  # Not needed for shape-only
-    # parser.add_argument("--hu_max", type=int)  # Not needed for shape-only
+    parser.add_argument("--hu_min", type=int)  # Not needed for shape-only
+    parser.add_argument("--hu_max", type=int)  # Not needed for shape-only
     args = parser.parse_args()
     config = DEFAULT_CONFIG.copy()
-    # if args.image_dir: config["image_dir"] = args.image_dir
+    if args.image_dir: config["image_dir"] = args.image_dir
     if args.seg_dir: config["seg_dir"] = args.seg_dir
     if args.output_root: config["output_root"] = args.output_root
     if args.target_resolution: config["target_resolution"] = tuple(map(float, args.target_resolution.split(",")))
     if args.n_workers: config["n_workers"] = args.n_workers
-    # if args.hu_min: config["hu_min"] = args.hu_min
-    # if args.hu_max: config["hu_max"] = args.hu_max
+    if args.hu_min: config["hu_min"] = args.hu_min
+    if args.hu_max: config["hu_max"] = args.hu_max
     main(config)
