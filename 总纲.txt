@@ -105,11 +105,28 @@ BCE + 伪标签 L_ref 教给 FΘ 哪个 voxel 属于哪个类；
 
 -----------------------------------------------------------------------------------------------
 工程细节：
-conda activate near
+项目环境：
+module load python-data/3.10-24.04
+source /projappl/project_2016517/JunjieCheng/junjieenv/bin/activate 
+
+#原始CT图像
+/scratch/project_2016517/junjie/dataset/original/images
+#原始mask
+/scratch/project_2016517/junjie/dataset/original/segmentations
+#bounding box(margin:10)后的图像：
+/scratch/project_2016517/junjie/dataset/bboxed/images
+#bounding box(margin:10)后的mask：
+/scratch/project_2016517/junjie/dataset/bboxed/segmentations
+resize到256的原图：
+/scratch/project_2016517/junjie/dataset/near_format_data/appearance
+resize到256的mask（训练用数据集）：
+/scratch/project_2016517/junjie/dataset/near_format_data/shape
+
 
 启动训练用nohub和-u
+nohub python3 -u train_coronary.py
 
-coronary：
+9coronary：
 
 构造边界带（band）
 对当前类的二值 mask M：
@@ -135,3 +152,6 @@ Epoch 201-300: 10% boundary bias
 这样模型最终能适应真实分布。
 
 Enhanced Combined Loss - 70% Dice + 30% Focal (gamma=4.0)
+
+目前进度：
+阶段一，coronary，测试多GPU代码
