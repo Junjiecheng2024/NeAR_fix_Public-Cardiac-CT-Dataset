@@ -1,0 +1,27 @@
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1,2,3]
+Loading `train_dataloader` to estimate number of stepping batches.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/utilities/model_summary/model_summary.py:231: Precision 16-mixed is not supported by the model summary.  Estimated model size in MB will not be accurate. Using 32 bits instead.
+
+  | Name          | Type                      | Params | Mode
+--------------------------------------------------------------------
+0 | model         | EmbeddingDecoderShapeOnly | 1.1 M  | train
+1 | focal_loss_fn | FocalLoss                 | 0      | train
+--------------------------------------------------------------------
+1.1 M     Trainable params
+0         Non-trainable params
+1.1 M     Total params
+4.422     Total estimated model params size (MB)
+66        Modules in train mode
+0         Modules in eval mode
+Epoch 139:  38%|███▊      | 96/250 [01:38<02:37,  0.98it/s, v_num=lep9, train/total_loss_step=0.649, train/dice_score_step=0.240, train/total_loss_epoch=0.512, train/dice_score_epoch=0.401, val/total_loss=0.589, val/shape_loss=0.587, val/dice_score=0.165]   
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/functional.py:505: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /pytorch/aten/src/ATen/native/TensorShape.cpp:4317.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/total_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/shape_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/dice_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/focal_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/bce_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/l2_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/dice_score', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/callbacks/lr_monitor.py:217: To copy construct from a tensor, it is recommended to use sourceTensor.detach().clone() or sourceTensor.detach().clone().requires_grad_(True), rather than torch.tensor(sourceTensor).
+                                                                          

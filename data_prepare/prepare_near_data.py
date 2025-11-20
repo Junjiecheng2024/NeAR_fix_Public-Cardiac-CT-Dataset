@@ -90,14 +90,20 @@ def compute_class_statistics(seg_array, num_classes=11):
     return stats
 
 def process_single_case(args):
-    """Process a single case (for multiprocessing) - Shape-only mode."""
+    """Process a single case (for multiprocessing) - Shape + Appearance mode."""
     case_id, config = args
     try:
+        img_path = Path(config["image_dir"]) / f"{case_id}.nii.img.nii.gz"
         seg_path = Path(config["seg_dir"]) / f"{case_id}.nii.img.nii.gz"
+        
+        # Check if both files exist
+        if not img_path.exists():
+            return {"case_id": case_id, "status": "missing_img", "error": str(img_path)}
         if not seg_path.exists():
             return {"case_id": case_id, "status": "missing_seg", "error": str(seg_path)}
 
-        # Load segmentation only (shape-only mode)
+        # Load CT image and segmentation
+        img_array, img_spacing, _ = load_nifti(img_path)
         seg_array, seg_spacing, _ = load_nifti(seg_path)
 
         # Validate segmentation
@@ -108,15 +114,24 @@ def process_single_case(args):
         # Resample to target resolution
         if config["target_resolution"] is not None:
             target_spacing = config["target_resolution"]
+            img_array = resample_volume(img_array, img_spacing, target_spacing, is_label=False)
             seg_array = resample_volume(seg_array, seg_spacing, target_spacing, is_label=True)
 
-        # Round to integer labels (important for proper class handling)
+        # Normalize CT image (appearance)
+        img_normalized = normalize_ct(img_array, config["hu_min"], config["hu_max"], config["normalize_method"])
+        
+        # Round to integer labels
         seg_int = np.rint(seg_array).astype(np.int16)
 
         # Compute class statistics
         class_stats = compute_class_statistics(seg_int, config["num_classes"])
         
-        # Save shape only (no appearance for shape-only mode)
+        # Save appearance (normalized CT)
+        img_out_path = Path(config["output_root"]) / "appearance" / f"{case_id}.npy"
+        img_out_path.parent.mkdir(parents=True, exist_ok=True)
+        np.save(img_out_path, img_normalized.astype(np.float32))
+        
+        # Save shape (segmentation)
         seg_out_path = Path(config["output_root"]) / "shape" / f"{case_id}.npy"
         seg_out_path.parent.mkdir(parents=True, exist_ok=True)
         np.save(seg_out_path, seg_int)
@@ -131,27 +146,27 @@ def process_single_case(args):
     except Exception as e:
         return {"case_id": case_id, "status": "error", "error": str(e)}
 
-def get_case_ids(seg_dir):
-    """Extract case IDs from segmentation directory."""
-    seg_dir = Path(seg_dir)
-    case_ids = [f.name.replace(".nii.img.nii.gz", "") for f in sorted(seg_dir.glob("*.nii.img.nii.gz"))]
-    return case_ids
-
 def main(config):
-    """Main preprocessing function - Shape-only mode."""
+    """Main preprocessing function - Shape + Appearance mode."""
     print("=" * 80)
-    print("NeAR Data Preprocessing (Shape-Only Mode)")
+    print("NeAR Data Preprocessing (Shape + Appearance Mode)")
     print("=" * 80)
     output_root = Path(config["output_root"])
     output_root.mkdir(parents=True, exist_ok=True)
-    (output_root / "appearance").mkdir(exist_ok=True)  # Not needed for shape-only
+    (output_root / "appearance").mkdir(exist_ok=True)
     (output_root / "shape").mkdir(exist_ok=True)
+    
     case_ids = get_case_ids(config["seg_dir"])
     print(f"\nFound {len(case_ids)} samples")
     print(f"Output directory: {output_root}")
-    print(f"Mode: Shape-Only (no appearance processing)")
+    print(f"Mode: Shape + Appearance")
+    print(f"Target resolution: {config['target_resolution']}")
+    print(f"HU range: [{config['hu_min']}, {config['hu_max']}]")
+    print(f"Normalization: {config['normalize_method']}")
     print(f"Using {config['n_workers']} processes\n")
+    
     process_args = [(cid, config) for cid in case_ids]
+    
     print("Processing...")
     results = []
     if config["n_workers"] > 1:
@@ -161,52 +176,13 @@ def main(config):
     else:
         for args in tqdm(process_args):
             results.append(process_single_case(args))
-    success_count = sum(1 for r in results if r["status"] == "success")
-    failed_results = [r for r in results if r["status"] != "success"]
-    print(f"\nProcessing complete:\n  Success: {success_count}/{len(case_ids)}\n  Failed: {len(failed_results)}/{len(case_ids)}")
-    if failed_results:
-        print("\nFailed samples:")
-        for r in failed_results[:10]:
-            print(f"  - {r['case_id']}: {r['status']} ({r.get('error', '')})")
 
-    successful_results = [r for r in results if r["status"] == "success"]
-    if successful_results:
-        info_df = pd.DataFrame([{"id": r["case_id"]} for r in successful_results])
-        info_df.to_csv(output_root / "info.csv", index=False)
-        print(f"\nSaved sample list: {output_root / 'info.csv'}")
+def get_case_ids(seg_dir):
+    """Extract case IDs from segmentation directory."""
+    seg_dir = Path(seg_dir)
+    case_ids = [f.name.replace(".nii.img.nii.gz", "") for f in sorted(seg_dir.glob("*.nii.img.nii.gz"))]
+    return case_ids
 
-    # class statistics
-    global_class_stats = np.zeros(config["num_classes"], dtype=np.int64)
-    for r in successful_results:
-        if "class_stats" in r:
-            global_class_stats += r["class_stats"]
-    stats_df = pd.DataFrame({
-        "class_id": range(config["num_classes"]),
-        "class_name": config["class_names"],
-        "total_voxels": global_class_stats,
-        "percentage": global_class_stats / global_class_stats.sum() * 100
-    })
-    stats_path = output_root / "class_statistics.csv"
-    stats_df.to_csv(stats_path, index=False)
-    print(f"\nSaved class statistics: {stats_path}")
-    print("\nClass distribution:")
-    print(stats_df.to_string(index=False))
-    # class weights
-    total_voxels = global_class_stats.sum()
-    class_weights = [total_voxels / (config["num_classes"] * c) if c > 0 else 0.0 for c in global_class_stats]
-    normalized_weights = [w / class_weights[0] if class_weights[0] > 0 else w for w in class_weights]
-    print("\nclass_weights = [")
-    for i, (name, w) in enumerate(zip(config["class_names"], normalized_weights)):
-        print(f"    {w:.4f},  # {i}: {name}")
-    print("]")
-    import json
-    weights_dict = {"class_weights": normalized_weights, "class_names": config["class_names"]}
-    with open(output_root / "class_weights.json", "w") as f:
-        json.dump(weights_dict, f, indent=2)
-    print(f"\nSaved class weights: {output_root / 'class_weights.json'}")
-    print("\n" + "=" * 80)
-    print("Data preprocessing complete!")
-    print("=" * 80)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="NeAR data preprocessing script (Shape-only mode)")

@@ -1,15 +1,17 @@
 """
 PyTorch Lightning Module for Coronary NeAR Training
-
-功能说明：
-1. 封装训练逻辑到 LightningModule，支持多GPU训练
-2. 集成动态边界采样、组合损失函数、课程学习策略
-3. 自动管理优化器、学习率调度、混合精度训练
-4. 支持 WandB 日志和 checkpoint 管理
 """
+import os
+import sys
+
+# 添加 near 模块路径到 Python 路径
+near_root = '/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset'
+if near_root not in sys.path:
+    sys.path.insert(0, near_root)
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import pytorch_lightning as pl
 from typing import Dict, Any, Optional
 
@@ -29,7 +31,7 @@ class FocalLoss(nn.Module):
         reduction: 'mean', 'sum' or 'none'
     """
     def __init__(self, alpha=0.25, gamma=4.0, reduction='mean'):
-        super(FocalLoss, self).__init__()
+        super().__init__()
         self.alpha = alpha
         self.gamma = gamma
         self.reduction = reduction
@@ -37,270 +39,206 @@ class FocalLoss(nn.Module):
     def forward(self, inputs, targets):
         """
         Args:
-            inputs: (N, *) logits (before sigmoid)
-            targets: (N, *) binary targets (0 or 1)
+            inputs: (N, *) predicted logits
+            targets: (N, *) ground truth (0 or 1)
         """
-        # Apply sigmoid to get probabilities
-        p = torch.sigmoid(inputs)
+        BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
+        pt = torch.exp(-BCE_loss)
+        F_loss = self.alpha * (1 - pt) ** self.gamma * BCE_loss
         
-        # Calculate CE loss
-        ce_loss = nn.functional.binary_cross_entropy_with_logits(
-            inputs, targets, reduction='none'
-        )
-        
-        # Calculate p_t
-        p_t = p * targets + (1 - p) * (1 - targets)
-        
-        # Calculate focal term: (1 - p_t)^gamma
-        focal_weight = (1 - p_t) ** self.gamma
-        
-        # Calculate focal loss
-        focal_loss = focal_weight * ce_loss
-        
-        # Apply alpha weighting
-        if self.alpha >= 0:
-            alpha_t = self.alpha * targets + (1 - self.alpha) * (1 - targets)
-            focal_loss = alpha_t * focal_loss
-        
-        # Apply reduction
         if self.reduction == 'mean':
-            return focal_loss.mean()
+            return F_loss.mean()
         elif self.reduction == 'sum':
-            return focal_loss.sum()
+            return F_loss.sum()
         else:
-            return focal_loss
+            return F_loss
 
 
 class CoronaryNeARLightningModule(pl.LightningModule):
     """
-    Lightning Module for Coronary NeAR training.
+    PyTorch Lightning wrapper for NeAR Coronary training.
     
-    Encapsulates:
-    - Model architecture (EmbeddingDecoderShapeOnly)
-    - Loss functions (70% Dice + 30% Focal)
-    - Optimizer and scheduler configuration
-    - Training and validation steps
-    - Logging and metrics
+    Key design following original train_coronary.py:
+    - gather_fn is called in training_step/validation_step
+    - NOT in Dataset.__getitem__
     """
     
     def __init__(
         self,
         n_samples: int,
+        train_gather_fn,
+        eval_gather_fn,
         latent_dimension: int = 256,
         decoder_channels: list = [64, 48, 32, 16],
         lr: float = 1e-3,
         l2_penalty_weight: float = 1e-4,
-        dice_weight: float = 0.7,
-        focal_weight: float = 0.3,
-        focal_gamma: float = 4.0,
-        focal_alpha: float = 0.25,
         use_cosine_schedule: bool = False,
         warmup_ratio: float = 0.01,
         total_steps: Optional[int] = None,
         milestones: list = [100, 200],
         gamma: float = 0.5,
-        **kwargs
     ):
-        """
-        Args:
-            n_samples: Number of training samples (for embedding layer)
-            latent_dimension: Dimension of latent vectors
-            decoder_channels: Channel configuration for decoder
-            lr: Learning rate
-            l2_penalty_weight: Weight for L2 regularization on latent codes
-            dice_weight: Weight for Dice loss in combined loss
-            focal_weight: Weight for Focal loss in combined loss
-            focal_gamma: Gamma parameter for Focal loss
-            focal_alpha: Alpha parameter for Focal loss
-            use_cosine_schedule: Whether to use cosine annealing scheduler
-            warmup_ratio: Ratio of warmup steps (for cosine scheduler)
-            total_steps: Total training steps (for cosine scheduler)
-            milestones: Milestones for MultiStepLR (if not using cosine)
-            gamma: Learning rate decay factor for MultiStepLR
-        """
         super().__init__()
+        self.save_hyperparameters(ignore=['train_gather_fn', 'eval_gather_fn'])
         
-        # Save hyperparameters
-        self.save_hyperparameters()
+        # Store gather functions
+        self.train_gather_fn = train_gather_fn
+        self.eval_gather_fn = eval_gather_fn
         
         # Model
         self.model = EmbeddingDecoderShapeOnly(
             n_samples=n_samples,
             latent_dimension=latent_dimension,
-            decoder_channels=decoder_channels
+            decoder_channels=decoder_channels,
         )
         
         # Loss functions
-        self.focal_loss_fn = FocalLoss(alpha=focal_alpha, gamma=focal_gamma)
-        self.dice_weight = dice_weight
-        self.focal_weight = focal_weight
-        self.l2_penalty_weight = l2_penalty_weight
+        self.focal_loss_fn = FocalLoss(alpha=0.25, gamma=4.0)
         
-        # Scheduler config (stored for configure_optimizers)
+        # Hyperparameters
         self.lr = lr
+        self.l2_penalty_weight = l2_penalty_weight
         self.use_cosine_schedule = use_cosine_schedule
         self.warmup_ratio = warmup_ratio
         self.total_steps = total_steps
         self.milestones = milestones
         self.gamma = gamma
-        
-        # For tracking best validation loss
-        self.best_val_loss = float('inf')
     
     def forward(self, indices, grids):
-        """Forward pass through the model."""
-        return self.model(indices, grids)
-    
-    def combined_loss_fn(self, pred_logits, targets):
         """
-        Enhanced Combined Loss with dynamic weighting
-        
         Args:
-            pred_logits: (B, 1, D, H, W) predicted logits
-            targets: (B, 1, D, H, W) ground truth labels
-            
+            indices: (B,) sample indices
+            grids: (B, D, H, W, 3) sampling grids
         Returns:
-            loss: weighted combination of Dice and Focal loss
+            pred_logit_shape: (B, 1, D, H, W) predicted logits
+            encoded: (B, latent_dim) latent codes
         """
-        # Focal loss
-        focal = self.focal_loss_fn(pred_logits, targets)
-        
-        # Dice loss (on probabilities)
-        pred_probs = torch.sigmoid(pred_logits)
-        smooth = 1.0
-        intersection = (pred_probs * targets).sum()
-        dice = (2. * intersection + smooth) / (pred_probs.sum() + targets.sum() + smooth)
-        dice_loss = 1 - dice  # Convert to loss (minimize)
-        
-        # Weighted combination
-        return self.dice_weight * dice_loss + self.focal_weight * focal
+        return self.model(indices, grids)
     
     def training_step(self, batch, batch_idx):
         """
-        Training step.
-        
-        Args:
-            batch: (indices, shape, grids, labels) from dataloader
-            batch_idx: batch index
-            
-        Returns:
-            loss: total loss for backpropagation
+        Training step following original design:
+        - batch contains (indices, shape) from DataLoader
+        - gather_fn is called here to get grids and labels
         """
-        indices, grids, labels = batch
+        indices, shape = batch
+        
+        # Call gather_fn to get grids and labels (on CPU)
+        # shape: (B, 1, D, H, W) on CPU
+        _, grids, labels = self.train_gather_fn(shape)
+        
+        # Move to GPU
+        grids = grids.to(self.device)
+        labels = labels.to(self.device)
         
         # Forward pass
         pred_logit_shape, encoded = self(indices, grids)
         
-        # Compute losses
-        shape_loss = self.combined_loss_fn(pred_logit_shape, labels)
-        dice_metric = dice_score(pred_logit_shape.sigmoid() > 0.5, labels)
+        # Combined loss: 70% Dice + 30% Focal
+        bce_loss = F.binary_cross_entropy_with_logits(pred_logit_shape, labels)
+        focal_loss = self.focal_loss_fn(pred_logit_shape, labels)
+        
+        # Dice loss
+        pred_prob = torch.sigmoid(pred_logit_shape)
+        dice = dice_score(pred_prob, labels)
+        dice_loss = 1.0 - dice
+        
+        # Combined shape loss
+        shape_loss = 0.85 * dice_loss + 0.15 * focal_loss
+        
+        # L2 penalty on latent codes
         l2_loss = latent_l2_penalty(encoded)
         
         # Total loss
-        loss = shape_loss + self.l2_penalty_weight * l2_loss
+        total_loss = shape_loss + self.l2_penalty_weight * l2_loss
         
         # Logging
-        self.log('train/loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('train/shape_loss', shape_loss, on_step=True, on_epoch=True, sync_dist=True)
-        self.log('train/dice', dice_metric, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('train/l2_loss', l2_loss, on_step=True, on_epoch=True, sync_dist=True)
+        self.log('train/total_loss', total_loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log('train/shape_loss', shape_loss, on_step=True, on_epoch=True)
+        self.log('train/dice_loss', dice_loss, on_step=True, on_epoch=True)
+        self.log('train/focal_loss', focal_loss, on_step=True, on_epoch=True)
+        self.log('train/bce_loss', bce_loss, on_step=True, on_epoch=True)
+        self.log('train/l2_loss', l2_loss, on_step=True, on_epoch=True)
+        self.log('train/dice_score', dice, prog_bar=True, on_step=True, on_epoch=True)
         
-        # Log learning rate
-        if self.trainer.global_step > 0:
-            lr = self.optimizers().param_groups[0]['lr']
-            self.log('train/lr', lr, on_step=True, on_epoch=False, sync_dist=True)
-        
-        return loss
+        return total_loss
     
     def validation_step(self, batch, batch_idx):
         """
-        Validation step.
-        
-        Args:
-            batch: (indices, shape, grids, labels) from dataloader
-            batch_idx: batch index
-            
-        Returns:
-            Dict containing validation metrics
+        Validation step following original design.
         """
-        indices, grids, labels = batch
+        indices, shape = batch
+        
+        # Call eval_gather_fn (no noise, higher resolution)
+        _, grids, labels = self.eval_gather_fn(shape)
+        
+        # Move to GPU
+        grids = grids.to(self.device)
+        labels = labels.to(self.device)
         
         # Forward pass
         pred_logit_shape, encoded = self(indices, grids)
         
-        # Compute losses
-        shape_loss = self.combined_loss_fn(pred_logit_shape, labels)
-        dice_metric = dice_score(pred_logit_shape.sigmoid() > 0.5, labels)
-        l2_loss = latent_l2_penalty(encoded)
+        # Losses
+        bce_loss = F.binary_cross_entropy_with_logits(pred_logit_shape, labels)
+        focal_loss = self.focal_loss_fn(pred_logit_shape, labels)
         
-        # Total loss
-        loss = shape_loss + self.l2_penalty_weight * l2_loss
+        pred_prob = torch.sigmoid(pred_logit_shape)
+        dice = dice_score(pred_prob, labels)
+        dice_loss = 1.0 - dice
+        
+        shape_loss = 0.7 * dice_loss + 0.3 * focal_loss
+        l2_loss = latent_l2_penalty(encoded)
+        total_loss = shape_loss + self.l2_penalty_weight * l2_loss
         
         # Logging
-        self.log('val/loss', loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('val/shape_loss', shape_loss, on_step=False, on_epoch=True, sync_dist=True)
-        self.log('val/dice', dice_metric, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log('val/l2_loss', l2_loss, on_step=False, on_epoch=True, sync_dist=True)
+        self.log('val/total_loss', total_loss, prog_bar=True, on_epoch=True, sync_dist=True)
+        self.log('val/shape_loss', shape_loss, prog_bar=True, on_epoch=True, sync_dist=True)
+        self.log('val/dice_loss', dice_loss, on_epoch=True, sync_dist=True)
+        self.log('val/focal_loss', focal_loss, on_epoch=True, sync_dist=True)
+        self.log('val/bce_loss', bce_loss, on_epoch=True, sync_dist=True)
+        self.log('val/l2_loss', l2_loss, on_epoch=True, sync_dist=True)
+        self.log('val/dice_score', dice, prog_bar=True, on_epoch=True, sync_dist=True)
         
-        return {'val_loss': loss, 'val_dice': dice_metric}
-    
-    def on_validation_epoch_end(self):
-        """Called at the end of validation epoch."""
-        # Get average validation loss
-        avg_val_loss = self.trainer.callback_metrics.get('val/loss', None)
-        
-        if avg_val_loss is not None and avg_val_loss < self.best_val_loss:
-            self.best_val_loss = avg_val_loss
-            # Log best loss
-            self.log('val/best_loss', self.best_val_loss, sync_dist=True)
+        return total_loss
     
     def configure_optimizers(self):
-        """
-        Configure optimizer and learning rate scheduler.
-        
-        Returns:
-            Dict containing optimizer and scheduler configuration
-        """
+        """Configure optimizer and learning rate scheduler."""
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
         
         if self.use_cosine_schedule:
-            # Cosine Annealing with warmup
+            # Cosine annealing with warmup
             if self.total_steps is None:
-                raise ValueError("total_steps must be provided for cosine scheduler")
+                # Estimate based on trainer settings if not provided
+                self.total_steps = self.trainer.estimated_stepping_batches
             
             warmup_steps = int(self.total_steps * self.warmup_ratio)
             
-            def lr_lambda(current_step):
-                if current_step < warmup_steps:
-                    # Linear warmup
-                    return float(current_step) / float(max(1, warmup_steps))
+            def lr_lambda(step):
+                if step < warmup_steps:
+                    return step / warmup_steps
                 else:
-                    # Cosine annealing
-                    import math
-                    progress = float(current_step - warmup_steps) / float(max(1, self.total_steps - warmup_steps))
-                    return 0.5 * (1.0 + math.cos(math.pi * progress))
+                    progress = (step - warmup_steps) / (self.total_steps - warmup_steps)
+                    return 0.5 * (1.0 + torch.cos(torch.tensor(progress * 3.14159)))
             
             scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
-            
             return {
                 'optimizer': optimizer,
                 'lr_scheduler': {
                     'scheduler': scheduler,
-                    'interval': 'step',  # Update per step
-                    'frequency': 1
+                    'interval': 'step',
                 }
             }
         else:
-            # MultiStepLR
+            # Multi-step LR
             scheduler = torch.optim.lr_scheduler.MultiStepLR(
                 optimizer, milestones=self.milestones, gamma=self.gamma
             )
-            
             return {
                 'optimizer': optimizer,
                 'lr_scheduler': {
                     'scheduler': scheduler,
-                    'interval': 'epoch',  # Update per epoch
-                    'frequency': 1
+                    'interval': 'epoch',
                 }
             }
+            

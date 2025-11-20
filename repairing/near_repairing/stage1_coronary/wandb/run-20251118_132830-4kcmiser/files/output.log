@@ -1,0 +1,26 @@
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1]
+
+  | Name          | Type                      | Params | Mode
+--------------------------------------------------------------------
+0 | model         | EmbeddingDecoderShapeOnly | 1.1 M  | train
+1 | focal_loss_fn | FocalLoss                 | 0      | train
+--------------------------------------------------------------------
+1.1 M     Trainable params
+0         Non-trainable params
+1.1 M     Total params
+4.422     Total estimated model params size (MB)
+66        Modules in train mode
+0         Modules in eval mode
+Epoch 1: 100%|██████████| 499/499 [05:14<00:00,  1.58it/s, v_num=iser, train/total_loss_step=0.684, train/dice_score_step=0.0283, val/total_loss=0.664, val/shape_loss=0.662, val/dice_score=0.0571, train/total_loss_epoch=0.668, train/dice_score_epoch=0.0515]  
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/functional.py:505: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /pytorch/aten/src/ATen/native/TensorShape.cpp:4317.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+                                                                          
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/total_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/shape_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/dice_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/focal_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/bce_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/l2_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/dice_score', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+`Trainer.fit` stopped: `max_epochs=2` reached.
+Training completed! Best checkpoint saved to: ./checkpoints/Coronary_class9_DEBUG_251118_132723/best.ckpt

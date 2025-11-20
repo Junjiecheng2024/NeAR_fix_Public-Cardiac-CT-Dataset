@@ -1,0 +1,110 @@
+{
+  "os": "Linux-4.18.0-553.74.1.el8_10.x86_64-x86_64-with-glibc2.28",
+  "python": "CPython 3.10.14",
+  "startedAt": "2025-11-19T16:53:47.377133Z",
+  "args": [
+    "--devices",
+    "4",
+    "--strategy",
+    "ddp",
+    "--config",
+    "config_coronary"
+  ],
+  "program": "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/train_coronary_pl.py",
+  "codePath": "repairing/near_repairing/stage1_coronary/train_coronary_pl.py",
+  "codePathLocal": "train_coronary_pl.py",
+  "git": {
+    "remote": "https://github.com/Junjiecheng2024/NeAR_fix_Public-Cardiac-CT-Dataset",
+    "commit": "2300d3e37087a9655f63733c27fe6544be0dcfc5"
+  },
+  "email": "c15919822199@gmail.com",
+  "root": ".",
+  "host": "r18g03.bullx",
+  "executable": "/projappl/project_2016517/chengjun/junjieenv/bin/python",
+  "cpu_count": 40,
+  "cpu_count_logical": 40,
+  "gpu": "Tesla V100-SXM2-32GB",
+  "gpu_count": 4,
+  "disk": {
+    "/": {
+      "total": "67108864",
+      "used": "12288"
+    }
+  },
+  "memory": {
+    "total": "403794276352"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "Tesla V100-SXM2-32GB",
+      "memoryTotal": "34359738368",
+      "cudaCores": 5120,
+      "architecture": "Volta",
+      "uuid": "GPU-3e0b777d-d7b2-ffe1-dd76-dc5ceb9087e0"
+    },
+    {
+      "name": "Tesla V100-SXM2-32GB",
+      "memoryTotal": "34359738368",
+      "cudaCores": 5120,
+      "architecture": "Volta",
+      "uuid": "GPU-0a57450f-0f9c-8205-7931-7f2b7cf2abe1"
+    },
+    {
+      "name": "Tesla V100-SXM2-32GB",
+      "memoryTotal": "34359738368",
+      "cudaCores": 5120,
+      "architecture": "Volta",
+      "uuid": "GPU-e96e32ff-6159-1c47-b952-d1638a2da1c3"
+    },
+    {
+      "name": "Tesla V100-SXM2-32GB",
+      "memoryTotal": "34359738368",
+      "cudaCores": 5120,
+      "architecture": "Volta",
+      "uuid": "GPU-889d5a0f-9ef6-5f37-b562-f9b152967135"
+    }
+  ],
+  "cudaVersion": "12.2",
+  "slurm": {
+    "cluster_name": "puhti",
+    "conf": "/etc/slurm/slurm.conf",
+    "cpus_on_node": "8",
+    "cpus_per_task": "8",
+    "gpus_on_node": "4",
+    "gtids": "0",
+    "hint": "nomultithread",
+    "job_account": "project_2016517",
+    "job_cpus_per_node": "8",
+    "job_end_time": "1763830054",
+    "job_gid": "10033029",
+    "job_gpus": "0,1,2,3",
+    "job_id": "30606294",
+    "job_name": "coronary_train",
+    "job_nodelist": "r18g03",
+    "job_num_nodes": "1",
+    "job_partition": "gpu",
+    "job_qos": "normal",
+    "job_start_time": "1763570854",
+    "job_uid": "10033029",
+    "job_user": "chengjun",
+    "jobid": "30606294",
+    "localid": "0",
+    "mem_per_node": "65536",
+    "mpi_type": "pmix_v3",
+    "nnodes": "1",
+    "nodeid": "0",
+    "nodelist": "r18g03",
+    "prio_process": "0",
+    "procid": "0",
+    "script_context": "prolog_task",
+    "submit_dir": "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary",
+    "submit_host": "puhti-login15.bullx",
+    "task_pid": "74987",
+    "tasks_per_node": "1",
+    "threads_per_core": "1",
+    "topology_addr": "r18g03",
+    "topology_addr_pattern": "node",
+    "tres_per_task": "cpu=8"
+  },
+  "writerId": "8grmp8xd7pf7po7po6c0t05gc1rxu2gf"
+}

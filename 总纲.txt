@@ -154,4 +154,17 @@ Epoch 201-300: 10% boundary bias
 Enhanced Combined Loss - 70% Dice + 30% Focal (gamma=4.0)
 
 目前进度：
-阶段一，coronary，测试多GPU代码
+阶段一，coronary，测试多GPU代码，申请临时节点，调用
+python train_coronary_pl.py --devices 1 --config config_coronary_debug
+很好，单GPU测试成功
+接下来测试2个GPU
+nohup python3 -u train_coronary_pl.py --devices 2 --strategy ddp --config config_coronary_debug > test_2gpu.log 2>&1 &
+双卡测试成功
+现在测试gpu显存，正式任务可以用4张V100，每张32G显存,现在找不OOM的最大bs。
+测试已完成，128分辨率，最大bs只能是1
+第一次正式训练，发现config有些要改：
+lr改成2e-3，增大学习率
+cfg["resume_checkpoint"] 改成绝对路径
+cfg["resume_checkpoint"] = "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/checkpoints/Coronary_class9_shape_only_251109_061814/best.pth"
+cfg["eval_interval"] = 5
+epoch再来300，观察。

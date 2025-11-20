@@ -1,0 +1,13 @@
+{"time":"2025-11-18T08:29:34.798645801+02:00","level":"INFO","msg":"stream: starting","core version":"0.23.0"}
+{"time":"2025-11-18T08:29:35.15920934+02:00","level":"INFO","msg":"stream: created new stream","id":"jbl86p71"}
+{"time":"2025-11-18T08:29:35.159407364+02:00","level":"INFO","msg":"handler: started","stream_id":"jbl86p71"}
+{"time":"2025-11-18T08:29:35.159931913+02:00","level":"INFO","msg":"stream: started","id":"jbl86p71"}
+{"time":"2025-11-18T08:29:35.16071372+02:00","level":"INFO","msg":"writer: started","stream_id":"jbl86p71"}
+{"time":"2025-11-18T08:29:35.160781634+02:00","level":"INFO","msg":"sender: started","stream_id":"jbl86p71"}
+{"time":"2025-11-18T08:29:35.992680541+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":37}
+{"time":"2025-11-18T08:29:35.993554185+02:00","level":"INFO","msg":"stream: closing","id":"jbl86p71"}
+{"time":"2025-11-18T08:29:36.046715411+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":28}
+{"time":"2025-11-18T08:29:36.880799848+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-11-18T08:29:37.182517248+02:00","level":"INFO","msg":"handler: closed","stream_id":"jbl86p71"}
+{"time":"2025-11-18T08:29:37.182731347+02:00","level":"INFO","msg":"sender: closed","stream_id":"jbl86p71"}
+{"time":"2025-11-18T08:29:37.182750302+02:00","level":"INFO","msg":"stream: closed","id":"jbl86p71"}
