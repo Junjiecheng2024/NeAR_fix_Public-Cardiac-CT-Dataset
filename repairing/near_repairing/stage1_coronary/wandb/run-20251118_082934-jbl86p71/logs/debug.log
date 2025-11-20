@@ -1,0 +1,24 @@
+2025-11-18 08:29:34,555 INFO    MainThread:2840168 [wandb_setup.py:_flush():80] Current SDK version is 0.23.0
+2025-11-18 08:29:34,556 INFO    MainThread:2840168 [wandb_setup.py:_flush():80] Configure stats pid to 2840168
+2025-11-18 08:29:34,556 INFO    MainThread:2840168 [wandb_setup.py:_flush():80] Loading settings from /users/chengjun/.config/wandb/settings
+2025-11-18 08:29:34,557 INFO    MainThread:2840168 [wandb_setup.py:_flush():80] Loading settings from /projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/wandb/settings
+2025-11-18 08:29:34,557 INFO    MainThread:2840168 [wandb_setup.py:_flush():80] Loading settings from environment variables
+2025-11-18 08:29:34,557 INFO    MainThread:2840168 [wandb_init.py:setup_run_log_directory():713] Logging user logs to ./wandb/run-20251118_082934-jbl86p71/logs/debug.log
+2025-11-18 08:29:34,557 INFO    MainThread:2840168 [wandb_init.py:setup_run_log_directory():714] Logging internal logs to ./wandb/run-20251118_082934-jbl86p71/logs/debug-internal.log
+2025-11-18 08:29:34,557 INFO    MainThread:2840168 [wandb_init.py:init():840] calling init triggers
+2025-11-18 08:29:34,557 INFO    MainThread:2840168 [wandb_init.py:init():845] wandb.init called with sweep_config: {}
+config: {'_wandb': {}}
+2025-11-18 08:29:34,557 INFO    MainThread:2840168 [wandb_init.py:init():888] starting backend
+2025-11-18 08:29:34,788 INFO    MainThread:2840168 [wandb_init.py:init():891] sending inform_init request
+2025-11-18 08:29:34,796 INFO    MainThread:2840168 [wandb_init.py:init():899] backend started and connected
+2025-11-18 08:29:34,797 INFO    MainThread:2840168 [wandb_init.py:init():969] updated telemetry
+2025-11-18 08:29:34,809 INFO    MainThread:2840168 [wandb_init.py:init():993] communicating run to backend with 90.0 second timeout
+2025-11-18 08:29:35,697 INFO    MainThread:2840168 [wandb_init.py:init():1040] starting run threads in backend
+2025-11-18 08:29:35,829 INFO    MainThread:2840168 [wandb_run.py:_console_start():2504] atexit reg
+2025-11-18 08:29:35,829 INFO    MainThread:2840168 [wandb_run.py:_redirect():2352] redirect: wrap_raw
+2025-11-18 08:29:35,830 INFO    MainThread:2840168 [wandb_run.py:_redirect():2421] Wrapping output streams.
+2025-11-18 08:29:35,830 INFO    MainThread:2840168 [wandb_run.py:_redirect():2444] Redirects installed.
+2025-11-18 08:29:35,832 INFO    MainThread:2840168 [wandb_init.py:init():1080] run started, returning control to user process
+2025-11-18 08:29:35,841 INFO    MainThread:2840168 [wandb_run.py:_config_callback():1385] config_cb None None {'n_samples': 998, 'latent_dimension': 256, 'decoder_channels': [64, 48, 32, 16], 'lr': 0.001, 'l2_penalty_weight': 0.0001, 'dice_weight': 0.7, 'focal_weight': 0.3, 'focal_gamma': 4.0, 'focal_alpha': 0.25, 'use_cosine_schedule': False, 'warmup_ratio': 0.01, 'total_steps': None, 'milestones': [100, 200], 'gamma': 0.5}
+2025-11-18 08:29:35,993 INFO    wandb-AsyncioManager-main:2840168 [service_client.py:_forward_responses():80] Reached EOF.
+2025-11-18 08:29:35,993 INFO    wandb-AsyncioManager-main:2840168 [mailbox.py:close():137] Closing mailbox, abandoning 2 handles.

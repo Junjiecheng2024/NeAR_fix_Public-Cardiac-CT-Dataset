@@ -21,38 +21,34 @@ cfg['appearance'] = False
 cfg['decoder_channels'] = [64, 48, 32, 16]
 cfg['latent_dimension'] = 256
 
-# Data parameters
-cfg["training_resolution"] = 64
-cfg["target_resolution"] = 128
+# Data parameters - 降低分辨率以节省内存
+cfg["training_resolution"] = 64  # 从128降到64 (内存降低8倍)
+cfg["target_resolution"] = 64    # 从128降到64
 cfg["n_training_samples"] = None
 
 # Optimization
 cfg["lr"] = 1e-3
-cfg["batch_size"] = 2
-cfg["gradient_accumulation_steps"] = 2
-cfg["eval_batch_size"] = 2
-cfg["n_workers"] = 4  # 减少worker避免调试时资源占用
+cfg["batch_size"] = 1  # 从2降到1 (内存降低一半)
+cfg["gradient_accumulation_steps"] = 4  # 从2增加到4，保持有效batch size=4
 
-# Learning rate schedule
+# Scheduler
 cfg["use_cosine_schedule"] = False
 cfg["milestones"] = [100, 200]
 cfg["gamma"] = 0.5
-cfg["warmup_ratio"] = 0.01
 
-# Mixed precision training
-cfg["use_amp"] = True
+# Regularization
+cfg["l2_penalty_weight"] = 1e-4
 
-# Validation interval
-cfg["eval_interval"] = 1  # 每轮都验证
-
-# Sampling strategy
+# Grid sampling
 cfg["grid_noise"] = 0
 cfg["uniform_grid_noise"] = True
-cfg["sampling_bias_ratio"] = 0.5
+cfg["sampling_bias_ratio"] = 0.0  # 调试时关闭边界采样以节省内存
 cfg["sampling_dilation_radius"] = 2
 
-# Loss weights
-cfg['l2_penalty_weight'] = 1e-4
+# Evaluation
+cfg["eval_batch_size"] = 1
+cfg["eval_interval"] = 1
 
-# Resume training from checkpoint
-cfg["resume_checkpoint"] = "./checkpoints/Coronary_class9_shape_only_251109_061814/best.pth"
+# System
+cfg["n_workers"] = 0  # 单GPU调试时设为0
+cfg["use_amp"] = False  # 可以设为True使用混合精度进一步节省内存

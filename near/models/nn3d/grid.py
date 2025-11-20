@@ -193,25 +193,42 @@ class GatherGridsFromVolumes:
         return grids
 
     def __call__(self, volumes):
-        batch_size = volumes.shape[0]
-        volumes = to_var(volumes)
+        """
+        Args:
+            volumes: shape (B, C, D, H, W) for 3D - should be on CPU
         
-        # Use biased sampling if enabled, otherwise uniform
+        Returns:
+            volumes, grids, labels (all on CPU for DataLoader)
+            - volumes: (B, C, D, H, W)
+            - grids: (B, D, H, W, 3)
+            - labels: (B, C, D, H, W)
+        """
+        # 确保 volumes 是 5D tensor (B, C, D, H, W)
+        if volumes.dim() == 4:
+            volumes = volumes.unsqueeze(1)  # -> (B, 1, D, H, W)
+        
+        # 强制转换到CPU并保证是float
+        volumes = volumes.cpu().float()
+        
+        # 生成grid (在CPU上) - shape: (B, D, H, W, 3)
         if self.boundary_bias_ratio > 0:
             grids = self.sample_biased_grid(volumes, self.grid_sampler.resolution)
-            grids = to_var(grids)
         else:
-            grids = to_var(self.grid_sampler.generate_batch_grid(batch_size))
+            grids = self.grid_sampler.generate_batch_grid(volumes.shape[0])
+            # 确保grids在CPU上
+            grids = grids.cpu()
         
-        if self.grid_noise is not None:
-            if self.uniform_grid_noise:
-                grids += to_var(torch.randn(batch_size,
-                                            1, 1, 1, 1)) * self.grid_noise
-            else:
-                grids += torch.randn_like(grids) * self.grid_noise
+        # 再次确认所有tensor在CPU上
+        assert volumes.device.type == 'cpu', f"volumes should be on CPU but is on {volumes.device}"
+        assert grids.device.type == 'cpu', f"grids should be on CPU but is on {grids.device}"
         
-        labels = F.grid_sample(volumes,
-                               grids,
-                               mode=self.label_interpolation_mode,
-                               align_corners=True)
+        # grid_sample (在CPU上)
+        labels = F.grid_sample(
+            volumes,
+            grids,
+            mode=self.label_interpolation_mode,
+            padding_mode='border',
+            align_corners=True
+        )
+        
         return volumes, grids, labels

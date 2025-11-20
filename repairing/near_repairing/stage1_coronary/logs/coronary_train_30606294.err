@@ -1,0 +1,63 @@
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/lightning_fabric/connector.py:571: `precision=16` is supported for historical reasons but its usage is discouraged. Please set your precision to 16-mixed instead!
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/lightning_fabric/plugins/environments/slurm.py:204: The `srun` command is available on your system but is not used. HINT: If your intention is to run Lightning on SLURM, prepend your python command with `srun` like so: srun python /projappl/project_2016517/chengjun/NeAR_fix_Public-C ...
+Using 16bit Automatic Mixed Precision (AMP)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+Initializing distributed: GLOBAL_RANK: 0, MEMBER: 1/4
+[W1119 18:53:06.698677923 socket.cpp:767] [c10d] The client socket cannot be initialized to connect to [localhost]:41099 (errno: 97 - Address family not supported by protocol).
+Initializing distributed: GLOBAL_RANK: 3, MEMBER: 4/4
+[W1119 18:53:08.808342366 socket.cpp:767] [c10d] The client socket cannot be initialized to connect to [localhost]:41099 (errno: 97 - Address family not supported by protocol).
+Initializing distributed: GLOBAL_RANK: 2, MEMBER: 3/4
+[W1119 18:53:08.821147115 socket.cpp:767] [c10d] The client socket cannot be initialized to connect to [localhost]:41099 (errno: 97 - Address family not supported by protocol).
+Initializing distributed: GLOBAL_RANK: 1, MEMBER: 2/4
+[W1119 18:53:08.833226174 socket.cpp:767] [c10d] The client socket cannot be initialized to connect to [localhost]:41099 (errno: 97 - Address family not supported by protocol).
+----------------------------------------------------------------------------------------------------
+distributed_backend=nccl
+All distributed processes registered. Starting with 4 processes
+----------------------------------------------------------------------------------------------------
+
+wandb: Currently logged in as: c15919822199 (c15919822199-samk-satakunta-university-of-applied-sciences) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run tqf18xoj
+wandb: Tracking run with wandb version 0.23.0
+wandb: Run data is saved locally in ./wandb/run-20251119_185347-tqf18xoj
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run Coronary_class9_shape_only_251119_185259
+wandb: ⭐️ View project at https://wandb.ai/c15919822199-samk-satakunta-university-of-applied-sciences/NeAR_stage1_coronary
+wandb: 🚀 View run at https://wandb.ai/c15919822199-samk-satakunta-university-of-applied-sciences/NeAR_stage1_coronary/runs/tqf18xoj
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1,2,3]
+LOCAL_RANK: 1 - CUDA_VISIBLE_DEVICES: [0,1,2,3]
+LOCAL_RANK: 2 - CUDA_VISIBLE_DEVICES: [0,1,2,3]
+LOCAL_RANK: 3 - CUDA_VISIBLE_DEVICES: [0,1,2,3]
+Loading `train_dataloader` to estimate number of stepping batches.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/utilities/model_summary/model_summary.py:231: Precision 16-mixed is not supported by the model summary.  Estimated model size in MB will not be accurate. Using 32 bits instead.
+
+  | Name          | Type                      | Params | Mode 
+--------------------------------------------------------------------
+0 | model         | EmbeddingDecoderShapeOnly | 1.1 M  | train
+1 | focal_loss_fn | FocalLoss                 | 0      | train
+--------------------------------------------------------------------
+1.1 M     Trainable params
+0         Non-trainable params
+1.1 M     Total params
+4.422     Total estimated model params size (MB)
+66        Modules in train mode
+0         Modules in eval mode
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/functional.py:505: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /pytorch/aten/src/ATen/native/TensorShape.cpp:4317.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/functional.py:505: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /pytorch/aten/src/ATen/native/TensorShape.cpp:4317.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/functional.py:505: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /pytorch/aten/src/ATen/native/TensorShape.cpp:4317.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/functional.py:505: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /pytorch/aten/src/ATen/native/TensorShape.cpp:4317.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/total_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/shape_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/dice_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/focal_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/bce_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/l2_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/dice_score', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/callbacks/lr_monitor.py:217: To copy construct from a tensor, it is recommended to use sourceTensor.detach().clone() or sourceTensor.detach().clone().requires_grad_(True), rather than torch.tensor(sourceTensor).
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/callbacks/lr_monitor.py:217: To copy construct from a tensor, it is recommended to use sourceTensor.detach().clone() or sourceTensor.detach().clone().requires_grad_(True), rather than torch.tensor(sourceTensor).
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/callbacks/lr_monitor.py:217: To copy construct from a tensor, it is recommended to use sourceTensor.detach().clone() or sourceTensor.detach().clone().requires_grad_(True), rather than torch.tensor(sourceTensor).
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/callbacks/lr_monitor.py:217: To copy construct from a tensor, it is recommended to use sourceTensor.detach().clone() or sourceTensor.detach().clone().requires_grad_(True), rather than torch.tensor(sourceTensor).

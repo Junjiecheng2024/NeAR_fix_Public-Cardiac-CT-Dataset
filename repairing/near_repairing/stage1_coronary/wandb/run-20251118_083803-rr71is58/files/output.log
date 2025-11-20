@@ -1,0 +1,69 @@
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1]
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/utilities/model_summary/model_summary.py:231: Precision 16-mixed is not supported by the model summary.  Estimated model size in MB will not be accurate. Using 32 bits instead.
+
+  | Name          | Type                      | Params | Mode
+--------------------------------------------------------------------
+0 | model         | EmbeddingDecoderShapeOnly | 1.1 M  | train
+1 | focal_loss_fn | FocalLoss                 | 0      | train
+--------------------------------------------------------------------
+1.1 M     Trainable params
+0         Non-trainable params
+1.1 M     Total params
+4.422     Total estimated model params size (MB)
+66        Modules in train mode
+0         Modules in eval mode
+Sanity Checking: |                                                           | 0/? [00:00<?, ?it/s]
+=== DEBUG INFO ===
+Shape after reshape: torch.Size([1, 1, 128, 128, 128])
+
+=== ERROR in gather_fn ===
+Error: 'UniformGridSampler' object is not callable
+Shape: torch.Size([1, 1, 128, 128, 128])
+Traceback (most recent call last):
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/train_coronary_pl.py", line 62, in __getitem__
+    result = self.gather_fn(shape)
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/near/models/nn3d/grid.py", line 220, in __call__
+    grids = self.grid_sampler(volumes.shape[0], volumes.device)
+TypeError: 'UniformGridSampler' object is not callable
+Traceback (most recent call last):
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/train_coronary_pl.py", line 232, in <module>
+    main(args)
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/train_coronary_pl.py", line 222, in main
+    trainer.fit(pl_module, train_dataloaders=dm.train_dataloader(), val_dataloaders=dm.val_dataloader())
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py", line 560, in fit
+    call._call_and_handle_interrupt(
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/call.py", line 49, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py", line 598, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py", line 1011, in _run
+    results = self._run_stage()
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py", line 1053, in _run_stage
+    self._run_sanity_check()
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py", line 1082, in _run_sanity_check
+    val_loop.run()
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/loops/utilities.py", line 179, in _decorator
+    return loop_run(self, *args, **kwargs)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/loops/evaluation_loop.py", line 138, in run
+    batch, batch_idx, dataloader_idx = next(data_fetcher)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/loops/fetchers.py", line 134, in __next__
+    batch = super().__next__()
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/loops/fetchers.py", line 61, in __next__
+    batch = next(self.iterator)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/utilities/combined_loader.py", line 341, in __next__
+    out = next(self._iterator)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/utilities/combined_loader.py", line 142, in __next__
+    out = next(self.iterators[0])
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 732, in __next__
+    data = self._next_data()
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 788, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 52, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 52, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/train_coronary_pl.py", line 62, in __getitem__
+    result = self.gather_fn(shape)
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/near/models/nn3d/grid.py", line 220, in __call__
+    grids = self.grid_sampler(volumes.shape[0], volumes.device)
+TypeError: 'UniformGridSampler' object is not callable

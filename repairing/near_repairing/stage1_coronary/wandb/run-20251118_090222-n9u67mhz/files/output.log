@@ -1,0 +1,70 @@
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1]
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/utilities/model_summary/model_summary.py:231: Precision 16-mixed is not supported by the model summary.  Estimated model size in MB will not be accurate. Using 32 bits instead.
+
+  | Name          | Type                      | Params | Mode
+--------------------------------------------------------------------
+0 | model         | EmbeddingDecoderShapeOnly | 1.1 M  | train
+1 | focal_loss_fn | FocalLoss                 | 0      | train
+--------------------------------------------------------------------
+1.1 M     Trainable params
+0         Non-trainable params
+1.1 M     Total params
+4.422     Total estimated model params size (MB)
+66        Modules in train mode
+0         Modules in eval mode
+Sanity Checking: |                                                                             | 0/? [00:00<?, ?it/s]
+=== DEBUG INFO ===
+Shape after reshape: torch.Size([1, 1, 128, 128, 128])
+/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/functional.py:505: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /pytorch/aten/src/ATen/native/TensorShape.cpp:4317.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+Sanity Checking DataLoader 0:   0%|                                                            | 0/2 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/train_coronary_pl.py", line 232, in <module>
+    main(args)
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/train_coronary_pl.py", line 222, in main
+    trainer.fit(pl_module, train_dataloaders=dm.train_dataloader(), val_dataloaders=dm.val_dataloader())
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py", line 560, in fit
+    call._call_and_handle_interrupt(
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/call.py", line 49, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py", line 598, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py", line 1011, in _run
+    results = self._run_stage()
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py", line 1053, in _run_stage
+    self._run_sanity_check()
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py", line 1082, in _run_sanity_check
+    val_loop.run()
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/loops/utilities.py", line 179, in _decorator
+    return loop_run(self, *args, **kwargs)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/loops/evaluation_loop.py", line 145, in run
+    self._evaluation_step(batch, batch_idx, dataloader_idx, dataloader_iter)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/loops/evaluation_loop.py", line 437, in _evaluation_step
+    output = call._call_strategy_hook(trainer, hook_name, *step_args)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/call.py", line 329, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/strategies/strategy.py", line 412, in validation_step
+    return self.lightning_module.validation_step(*args, **kwargs)
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/lightning_module.py", line 230, in validation_step
+    pred_logit_shape, encoded = self(indices, grids)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/lightning_module.py", line 153, in forward
+    return self.model(indices, grids)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/near/models/nn3d/model_shape_only.py", line 195, in forward
+    _, out = self.decoder(encoded, grid)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/near/models/nn3d/model_shape_only.py", line 126, in forward
+    implicit_feature_1 = F.grid_sample(feature_map_1,
+  File "/projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/nn/functional.py", line 5108, in grid_sample
+    return torch.grid_sampler(input, grid, mode_enum, padding_mode_enum, align_corners)
+RuntimeError: grid_sampler(): expected 5D input and grid with same number of dimensions, but got input with sizes [2, 64, 4, 4, 4] and grid with sizes [2, 1, 128, 128, 128, 3]

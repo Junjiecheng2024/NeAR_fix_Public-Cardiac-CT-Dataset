@@ -1,0 +1,49 @@
+{"time":"2025-11-19T18:53:49.653982498+02:00","level":"INFO","msg":"stream: starting","core version":"0.23.0"}
+{"time":"2025-11-19T18:53:50.115017795+02:00","level":"INFO","msg":"stream: created new stream","id":"tqf18xoj"}
+{"time":"2025-11-19T18:53:50.11509244+02:00","level":"INFO","msg":"handler: started","stream_id":"tqf18xoj"}
+{"time":"2025-11-19T18:53:50.116217098+02:00","level":"INFO","msg":"stream: started","id":"tqf18xoj"}
+{"time":"2025-11-19T18:53:50.116227749+02:00","level":"INFO","msg":"writer: started","stream_id":"tqf18xoj"}
+{"time":"2025-11-19T18:53:50.116260051+02:00","level":"INFO","msg":"sender: started","stream_id":"tqf18xoj"}
+{"time":"2025-11-19T19:18:49.045200581+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":3032}
+{"time":"2025-11-19T19:18:54.072632171+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":107}
+{"time":"2025-11-19T19:19:17.411816989+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":3321}
+{"time":"2025-11-19T19:19:18.797643249+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":45}
+{"time":"2025-11-19T20:44:42.154668812+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":16470}
+{"time":"2025-11-19T20:44:45.539006326+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":26}
+{"time":"2025-11-19T22:01:18.347268772+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":28066}
+{"time":"2025-11-19T22:01:46.097180333+02:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/graphql\": context deadline exceeded (Client.Timeout exceeded while awaiting headers)"}
+{"time":"2025-11-19T22:01:56.045178654+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":315}
+{"time":"2025-11-19T22:25:58.019011448+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":31685}
+{"time":"2025-11-19T22:25:58.055313706+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":1}
+{"time":"2025-11-19T22:26:42.779175573+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":32030}
+{"time":"2025-11-19T22:26:42.831729945+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":1}
+{"time":"2025-11-19T22:40:05.884209776+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":33810}
+{"time":"2025-11-19T22:40:07.111165509+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":4}
+{"time":"2025-11-19T22:50:46.563447517+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":35465}
+{"time":"2025-11-19T22:50:47.065534366+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":35497}
+{"time":"2025-11-19T22:50:46.726117468+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":1}
+{"time":"2025-11-19T22:50:50.643836336+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":51}
+{"time":"2025-11-19T23:28:41.394215322+02:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/c15919822199-samk-satakunta-university-of-applied-sciences/NeAR_stage1_coronary/tqf18xoj/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}
+{"time":"2025-11-20T01:37:29.305147811+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":60379}
+{"time":"2025-11-20T01:37:29.512946643+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":1}
+{"time":"2025-11-20T01:37:29.799480909+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":60412}
+{"time":"2025-11-20T01:37:29.830682433+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":14}
+{"time":"2025-11-20T06:49:29.929869278+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":106980}
+{"time":"2025-11-20T06:49:30.208023812+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":1}
+{"time":"2025-11-20T07:57:07.201833125+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":117245}
+{"time":"2025-11-20T07:57:08.735154447+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":26}
+{"time":"2025-11-20T07:57:52.13364908+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":117638}
+{"time":"2025-11-20T07:57:52.409601667+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":11}
+{"time":"2025-11-20T09:34:48.105116009+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":132044}
+{"time":"2025-11-20T09:34:48.398604555+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":1}
+{"time":"2025-11-20T09:59:34.388446516+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":135452}
+{"time":"2025-11-20T09:59:34.837149484+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":1}
+{"time":"2025-11-20T09:59:35.059646756+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":135485}
+{"time":"2025-11-20T09:59:35.333966294+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":2}
+{"time":"2025-11-20T10:23:29.38884046+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":138916}
+{"time":"2025-11-20T10:23:29.594963553+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":1}
+{"time":"2025-11-20T10:47:03.109287957+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":142639}
+{"time":"2025-11-20T10:47:03.25303989+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":1}
+{"time":"2025-11-20T11:09:29.91104218+02:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":145863}
+{"time":"2025-11-20T11:09:31.302365088+02:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":6}
+{"time":"2025-11-20T13:03:59.961935826+02:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/c15919822199-samk-satakunta-university-of-applied-sciences/NeAR_stage1_coronary/tqf18xoj/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}

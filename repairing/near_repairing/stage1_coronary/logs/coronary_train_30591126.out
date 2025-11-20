@@ -1,0 +1,8 @@
+==== SLURM JOB INFO ====
+Job ID: 30591126
+Running on nodes: r13g01
+GPUs: 
+========================
+Current working directory: /projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary
+Starting training...
+Training finished.

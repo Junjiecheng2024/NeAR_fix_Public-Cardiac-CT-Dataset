@@ -2,22 +2,25 @@
 
 Usage:
   - For local single-GPU debugging:
-      python train_coronary_pl.py --devices 1
+      python train_coronary_pl.py --devices 1 --config config_coronary_debug
   - For multi-GPU (on cluster with 4 A100):
-      python train_coronary_pl.py --devices 4 --strategy ddp
+      python train_coronary_pl.py --devices 4 --strategy ddp --config config_coronary
 
-This script wraps the existing dataset + GatherGridsFromVolumes logic into a
-LightningDataModule and uses the provided `CoronaryNeARLightningModule`.
-It integrates WandB logging and ModelCheckpoint callbacks.
+This script follows the original train_coronary.py design:
+- DataLoader returns (indices, shape) tuples
+- gather_fn is called in training_step, not in Dataset.__getitem__
+- This avoids collate/pin_memory issues
 """
-
 import os
 import sys
-import time
 import argparse
+import time
+import importlib
 
-# Ensure project root is on sys.path (same behavior as original scripts)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+# 添加 near 模块路径到 Python 路径
+near_root = '/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset'
+if near_root not in sys.path:
+    sys.path.insert(0, near_root)
 
 import torch
 from pytorch_lightning import Trainer
@@ -29,106 +32,79 @@ from near.datasets.cardiac_dataset import CardiacClassDatasetWithBiasedSampling
 from near.models.nn3d.grid import GatherGridsFromVolumes
 
 
-class GridGatherWrapperDataset:
-    """Wraps original dataset to return (indices, grids, labels) so DataLoader
-    can be used directly with LightningModule which expects these tensors.
-    """
-    def __init__(self, base_dataset, gather_fn):
-        self.base = base_dataset
-        self.gather_fn = gather_fn
-
-    def __len__(self):
-        return len(self.base)
-
-    def __getitem__(self, idx):
-        # base returns (indices, shape) similar to legacy script
-        item = self.base[idx]
-        # item could be (index,) or (index, shape) depending on dataset
-        if isinstance(item, tuple) and len(item) >= 2:
-            indices, shape = item[0], item[1]
-        else:
-            indices = item
-            shape = None
-
-        # gather_fn returns (coords?, grids, labels) in the legacy code
-        # we ignore the first returned element and keep grids and labels
-        _, grids, labels = self.gather_fn(shape)
-
-        return indices, grids, labels
-
-
 class CoronaryDataModule:
+    """
+    DataModule for Coronary training.
+    
+    Key design:
+    - Datasets return (indices, shape) - simple tuples
+    - gather_fn is stored and passed to LightningModule
+    - gather_fn is called in training_step, NOT in Dataset
+    """
     def __init__(self, cfg):
         self.cfg = cfg
+        self.train_gather_fn = None
+        self.eval_gather_fn = None
 
     def setup(self, stage=None):
-        data_path = self.cfg['data_path']
-
-        # Train and eval datasets (we intentionally use same dataset to overfit)
-        train_ds = CardiacClassDatasetWithBiasedSampling(
-            root=data_path,
+        # Training dataset - 最简化版本，只传必需参数
+        self.train_dataset = CardiacClassDatasetWithBiasedSampling(
+            self.cfg['data_path'],
             class_name=self.cfg['class_name'],
-            resolution=self.cfg['target_resolution'],
-            n_samples=self.cfg['n_training_samples'],
-            sampling_bias_ratio=self.cfg['sampling_bias_ratio'],
-            sampling_dilation_radius=self.cfg['sampling_dilation_radius'],
             class_index=self.cfg['class_index']
         )
 
-        eval_ds = CardiacClassDatasetWithBiasedSampling(
-            root=data_path,
+        # Validation dataset - 使用相同的数据集（目标是过拟合）
+        self.eval_dataset = CardiacClassDatasetWithBiasedSampling(
+            self.cfg['data_path'],
             class_name=self.cfg['class_name'],
-            resolution=self.cfg['target_resolution'],
-            n_samples=self.cfg['n_training_samples'],
-            sampling_bias_ratio=self.cfg['sampling_bias_ratio'],
-            sampling_dilation_radius=self.cfg['sampling_dilation_radius'],
             class_index=self.cfg['class_index']
         )
 
-        # Gather functions
-        self.train_gather = GatherGridsFromVolumes(
-            self.cfg['training_resolution'],
-            grid_noise=self.cfg.get('grid_noise', None),
+        # Create gather functions (to be used in LightningModule)
+        # 所有的采样参数都在这里配置
+        self.train_gather_fn = GatherGridsFromVolumes(
+            resolution=self.cfg['training_resolution'],
+            grid_noise=self.cfg.get('grid_noise', 0),
             uniform_grid_noise=self.cfg.get('uniform_grid_noise', True),
-            boundary_bias_ratio=self.cfg.get('sampling_bias_ratio', 0.5),
+            label_interpolation_mode='nearest',
+            boundary_bias_ratio=self.cfg.get('sampling_bias_ratio', 0.0),
             boundary_dilation_radius=self.cfg.get('sampling_dilation_radius', 2)
         )
 
-        self.eval_gather = GatherGridsFromVolumes(
-            self.cfg['target_resolution'],
-            grid_noise=None,
-            boundary_bias_ratio=0.0
+        self.eval_gather_fn = GatherGridsFromVolumes(
+            resolution=self.cfg['target_resolution'],
+            grid_noise=0,
+            uniform_grid_noise=True,
+            label_interpolation_mode='nearest',
+            boundary_bias_ratio=0.0,  # No bias for evaluation
+            boundary_dilation_radius=2
         )
 
-        # Wrap datasets so they directly yield (indices, grids, labels)
-        self.train_dataset = GridGatherWrapperDataset(train_ds, self.train_gather)
-        self.eval_dataset = GridGatherWrapperDataset(eval_ds, self.eval_gather)
-
     def train_dataloader(self):
-        from torch.utils.data import DataLoader
-        return DataLoader(self.train_dataset,
-                          batch_size=self.cfg['batch_size'],
-                          shuffle=True,
-                          pin_memory=torch.cuda.is_available(),
-                          num_workers=self.cfg['n_workers'])
+        return torch.utils.data.DataLoader(
+            self.train_dataset,
+            batch_size=self.cfg['batch_size'],
+            shuffle=True,
+            num_workers=self.cfg.get('n_workers', 0),
+            pin_memory=True
+        )
 
     def val_dataloader(self):
-        from torch.utils.data import DataLoader
-        return DataLoader(self.eval_dataset,
-                          batch_size=self.cfg['eval_batch_size'],
-                          shuffle=False,
-                          pin_memory=torch.cuda.is_available(),
-                          num_workers=self.cfg['n_workers'])
+        return torch.utils.data.DataLoader(
+            self.eval_dataset,
+            batch_size=self.cfg.get('eval_batch_size', self.cfg['batch_size']),
+            shuffle=False,
+            num_workers=self.cfg.get('n_workers', 0),
+            pin_memory=True
+        )
 
 
 def main(args):
     # Load config
-    import importlib
     config_name = args.config if hasattr(args, 'config') and args.config else 'config_coronary'
     cfg_module = importlib.import_module(config_name)
     cfg = cfg_module.cfg
-    print(f"\nLoaded config from: {config_name}")
-    print(f"Training for {cfg['n_epochs']} epochs\n")
     
     print(f"\n{'='*70}")
     print(f"Loading config from: {config_name}")
@@ -145,46 +121,53 @@ def main(args):
     dm.setup()
 
     # LightningModule
-    n_samples = len(dm.train_dataset.base)
+    n_samples = len(dm.train_dataset)
     pl_module = CoronaryNeARLightningModule(
         n_samples=n_samples,
+        train_gather_fn=dm.train_gather_fn,  # 传入 gather_fn
+        eval_gather_fn=dm.eval_gather_fn,    # 传入 gather_fn
         latent_dimension=cfg.get('latent_dimension', 256),
         decoder_channels=cfg.get('decoder_channels', [64, 48, 32, 16]),
         lr=cfg.get('lr', 1e-3),
         l2_penalty_weight=cfg.get('l2_penalty_weight', 1e-4),
         use_cosine_schedule=cfg.get('use_cosine_schedule', False),
         warmup_ratio=cfg.get('warmup_ratio', 0.01),
-        total_steps=None,  # optional, not required for MultiStepLR
+        total_steps=None,
         milestones=cfg.get('milestones', [100, 200]),
         gamma=cfg.get('gamma', 0.5),
     )
 
     # Attempt to load existing checkpoint weights (if any)
     resume_ckpt = cfg.get('resume_checkpoint', None)
+    print(f"[DEBUG] resume_checkpoint in cfg: {resume_ckpt}")
+    if resume_ckpt:
+        print(f"[DEBUG] exists? {os.path.exists(resume_ckpt)}")
+
     if resume_ckpt and os.path.exists(resume_ckpt):
         try:
             state = torch.load(resume_ckpt, map_location='cpu')
-            # Try loading into underlying model if keys match
             try:
                 pl_module.model.load_state_dict(state)
                 print(f"Loaded pretrained weights into pl_module.model from {resume_ckpt}")
             except Exception:
-                # Fallback: try loading into module directly
                 pl_module.load_state_dict(state, strict=False)
                 print(f"Loaded checkpoint into pl_module (partial) from {resume_ckpt}")
         except Exception as e:
             print(f"Warning: failed to load resume checkpoint: {e}")
 
+
     # WandB logger
     wandb_logger = WandbLogger(project='NeAR_stage1_coronary', name=cfg['run_flag'])
 
     # Callbacks
-    ckpt_cb = ModelCheckpoint(dirpath=base_path,
-                              filename='best',
-                              monitor='val/shape_loss',
-                              mode='min',
-                              save_top_k=1,
-                              save_last=True)
+    ckpt_cb = ModelCheckpoint(
+        dirpath=base_path,
+        filename='best',
+        monitor='val/shape_loss',
+        mode='min',
+        save_top_k=1,
+        save_last=True
+    )
 
     lr_monitor = LearningRateMonitor(logging_interval='step')
 
@@ -197,22 +180,25 @@ def main(args):
         max_epochs=cfg['n_epochs'],
         accelerator='gpu' if torch.cuda.is_available() else 'cpu',
         devices=args.devices,
-        strategy=args.strategy if args.strategy else None,
+        strategy=args.strategy if args.strategy else 'auto',
         precision=precision,
         accumulate_grad_batches=cfg.get('gradient_accumulation_steps', 1),
         check_val_every_n_epoch=cfg.get('eval_interval', 1),
         log_every_n_steps=50,
-        deterministic=True,
+        deterministic=False,
     )
 
     # Fit
     trainer.fit(pl_module, train_dataloaders=dm.train_dataloader(), val_dataloaders=dm.val_dataloader())
+
+    print(f"\nTraining completed! Best checkpoint saved to: {base_path}/best.ckpt")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--devices', type=int, default=1, help='Number of devices (GPUs) to use')
     parser.add_argument('--strategy', type=str, default=None, help='DDP strategy (e.g., ddp)')
+    parser.add_argument('--config', type=str, default='config_coronary', help='Config module name (without .py)')
     args = parser.parse_args()
 
     main(args)
