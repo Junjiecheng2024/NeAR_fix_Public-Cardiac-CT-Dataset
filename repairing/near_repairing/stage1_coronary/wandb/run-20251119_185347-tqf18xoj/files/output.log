@@ -13,7 +13,7 @@ Loading `train_dataloader` to estimate number of stepping batches.
 4.422     Total estimated model params size (MB)
 66        Modules in train mode
 0         Modules in eval mode
-Epoch 244:  94%|█████████▎| 234/250 [03:54<00:16,  1.00it/s, v_num=8xoj, train/total_loss_step=0.571, train/dice_score_step=0.332, train/total_loss_epoch=0.498, train/dice_score_epoch=0.417, val/total_loss=0.436, val/shape_loss=0.434, val/dice_score=0.382]  
+Epoch 256:  69%|██████▉   | 173/250 [02:53<01:17,  1.00it/s, v_num=8xoj, train/total_loss_step=0.570, train/dice_score_step=0.332, train/total_loss_epoch=0.488, train/dice_score_epoch=0.429, val/total_loss=0.432, val/shape_loss=0.431, val/dice_score=0.387]  
 /projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/torch/functional.py:505: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /pytorch/aten/src/ATen/native/TensorShape.cpp:4317.)
   return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
 /projappl/project_2016517/chengjun/junjieenv/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:434: It is recommended to use `self.log('train/total_loss', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
