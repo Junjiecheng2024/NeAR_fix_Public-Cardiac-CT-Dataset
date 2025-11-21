@@ -26,7 +26,7 @@ cfg['class_name'] = 'Coronary'
 cfg['class_index'] = 9
 
 # Training parameters
-cfg["n_epochs"] = 400  # Can increase to 1500 if needed
+cfg["n_epochs"] = 1500  # Can increase to 1500 if needed
 # Note: milestones已废弃，现在使用Cosine Annealing scheduler
 
 # Model parameters
@@ -61,14 +61,14 @@ cfg["eval_interval"] = 5  # 每10轮验证一次（128³训练更慢）
 # Sampling strategy
 cfg["grid_noise"] = 0  # Grid noise for data augmentation (阶段1暂不使用)
 cfg["uniform_grid_noise"] = True
-cfg["sampling_bias_ratio"] = 0.05  # 初始50%边界采样，训练中动态调整
+cfg["sampling_bias_ratio"] = 0  # 初始50%边界采样，训练中动态调整
 cfg["sampling_dilation_radius"] = 2  # Boundary region dilation
 
 # Loss weights
 cfg['l2_penalty_weight'] = 1e-4  # 降低L2正则化10倍，增加模型容量
 
 # Resume training from checkpoint
-cfg["resume_checkpoint"] = "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/checkpoints/Coronary_class9_shape_only_251118_152832/best.ckpt"  # 继承enhanced训练的best model (Epoch 1, Dice 7.31%)
+cfg["resume_checkpoint"] = "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/checkpoints/Coronary_class9_shape_only_251119_185259/best.ckpt"  # 继承enhanced训练的best model (Epoch 1, Dice 7.31%)
 
 # Note: We want overfitting to get the best refined labels
 # So we use all samples as both train and eval, no validation split

@@ -26,7 +26,7 @@ cfg['class_name'] = 'RA'
 cfg['class_index'] = 4
 
 # Training parameters
-cfg["n_epochs"] = 400
+cfg["n_epochs"] = 1500
 # Note: milestones已废弃，现在使用Cosine Annealing scheduler
 
 # Model parameters
@@ -40,7 +40,7 @@ cfg["target_resolution"] = 128
 cfg["n_training_samples"] = None 
 
 # Optimization
-cfg["lr"] = 1e-3
+cfg["lr"] = 2e-3
 cfg["batch_size"] = 1  
 cfg["gradient_accumulation_steps"] = 6
 cfg["eval_batch_size"] = 1  

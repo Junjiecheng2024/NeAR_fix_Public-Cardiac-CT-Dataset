@@ -26,7 +26,7 @@ cfg['class_name'] = 'PV'
 cfg['class_index'] = 10
 
 # Training parameters
-cfg["n_epochs"] = 400
+cfg["n_epochs"] = 1500
 # Note: milestones已废弃，现在使用Cosine Annealing scheduler
 
 # Model parameters

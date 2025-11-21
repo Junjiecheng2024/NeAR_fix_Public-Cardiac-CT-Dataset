@@ -23,7 +23,7 @@ module load python-data/3.10-24.04
 source /projappl/project_2016517/chengjun/junjieenv/bin/activate
 
 ### === 切换到你的代码目录 ===
-cd /home/user/persistent/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_PV
+cd /projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_PV
 
 echo "Current working directory: $(pwd)"
 echo "Starting training..."
