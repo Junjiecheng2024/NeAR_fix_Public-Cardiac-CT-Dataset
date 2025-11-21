@@ -26,7 +26,7 @@ cfg['class_name'] = 'RV'
 cfg['class_index'] = 5
 
 # Training parameters
-cfg["n_epochs"] = 400  # Can increase to 1500 if needed
+cfg["n_epochs"] = 1500  # Can increase to 1500 if needed
 # Note: milestones已废弃，现在使用Cosine Annealing scheduler
 
 # Model parameters
@@ -40,7 +40,7 @@ cfg["target_resolution"] = 128   # Dataset加载和验证时的分辨率
 cfg["n_training_samples"] = None  # Use all samples (指的是所有病例，不是采样点数)
 
 # Optimization
-cfg["lr"] = 1e-3  # 恢复初始学习率，快速学习
+cfg["lr"] = 2e-3  # 恢复初始学习率，快速学习
 cfg["batch_size"] = 1  
 cfg["gradient_accumulation_steps"] = 6  # 有效batch_size = 4
 cfg["eval_batch_size"] = 1  

@@ -103,7 +103,7 @@ class RANeARLightningModule(pl.LightningModule):
         dice = dice_score(pred_prob, labels)
         dice_loss = 1.0 - dice
         
-        shape_loss = 0.85 * dice_loss + 0.15 * focal_loss
+        shape_loss = 0.5 * dice_loss + 0.5 * focal_loss
         l2_loss = latent_l2_penalty(encoded)
         
         total_loss = shape_loss + self.l2_penalty_weight * l2_loss

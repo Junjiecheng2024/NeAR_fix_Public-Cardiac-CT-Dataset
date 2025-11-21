@@ -19,21 +19,6 @@ output: 64 -> 1）：隐式函数：F_c(z_{i,c}, p) → o ∈ (0,1)损失：BCE 
 在采样时使用偏采样（biased_sampling：sampling_bias_ratio=0.5，sampling_dilation_radius=2）
 阶段一目标：获得比原始 noisy 标签更干净的 per-class ground truth，尤其是小结构。
 
-各类体素占比：
-| 类别 | 占比 | 标准差 |
-|------|------|--------|
-| 背景 (Background) | 74.71% | ± 2.87% |
-| 心肌 (Myocardium) | 4.09% | ± 0.74% |
-| 左房 (LA) | 2.63% | ± 0.61% |
-| 左室 (LV) | 4.22% | ± 0.92% |
-| 右房 (RA) | 3.03% | ± 0.64% |
-| 右室 (RV) | 5.09% | ± 1.02% |
-| 主动脉 (Aorta) | 3.47% | ± 0.66% |
-| 肺动脉 (PA) | 1.43% | ± 0.53% |
-| 左心耳 (LAA) | 0.33% | ± 0.12% |
-| 冠状动脉 (Coronary) | 0.19% | ± 0.06% |
-| 肺静脉 (PV) | 0.80% | ± 0.14% |
-
 阶段二：
 融合成干净的多类标签：对每个样本 i：手上有 10 个 M^{ref}_{i,c}。用固定优先级做一次性的融合，得到多类标签 L^{ref}_i：
 优先级：Coronary (索引 9)＞LAA (索引 8)＞PV (索引 10)＞LA (索引 2)＞LV (索引 3)＞Myocardium (索引 1)＞Aorta (索引 6)＞RA (索引 4)＞RV (索引 5)＞PA (索引 7)
@@ -183,3 +168,8 @@ cfg["resume_checkpoint"] 改成绝对路径
 cfg["resume_checkpoint"] = "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/checkpoints/Coronary_class9_shape_only_251109_061814/best.pth"
 cfg["eval_interval"] = 5
 epoch再来300，观察。
+
+stage1_coronary 
+目前最好：/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/checkpoints/Coronary_class9_shape_only_251119_185259/best.ckpt
+val dice： 0.38
+待完成：推理到256，然后进行可视化对比，如果效果不好，要再训练

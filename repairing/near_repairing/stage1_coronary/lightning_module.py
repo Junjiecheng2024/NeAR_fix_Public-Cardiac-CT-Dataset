@@ -144,7 +144,7 @@ class CoronaryNeARLightningModule(pl.LightningModule):
         dice_loss = 1.0 - dice
         
         # Combined shape loss
-        shape_loss = 0.85 * dice_loss + 0.15 * focal_loss
+        shape_loss = 0.5 * dice_loss + 0.5 * focal_loss
         
         # L2 penalty on latent codes
         l2_loss = latent_l2_penalty(encoded)
