@@ -36,3 +36,13 @@ Thumbs.db
 # Data directories (adjust as needed)
 # data/
 # dataset/
+
+
+# 忽略所有 wandb 目录
+wandb/
+
+# 忽略所有 .out 文件
+*.out
+
+# 忽略所有 .err 文件
+*.err

@@ -187,9 +187,10 @@ RV
 
 现在推理和可视化验证.用/projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_RV/inference_and_evaluate.py
 python inference_and_evaluate.py \
-    --checkpoint /projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_RV/checkpoints/RV_class5_shape_only_251121_111501/best.ckpt \
-    --output_dir class5_RV_results_256 \
-    --resolution 256 \
-    --target_class 5 \
-    --n_samples 10 \
-    --data_path /scratch/project_2016517/junjie/dataset/near_format_data
+--checkpoint /projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_RV/checkpoints/RV_class5_shape_only_251121_111501/best.ckpt \
+--output_dir class5_RV_results_256 \
+--resolution 256 \
+--target_class 5 \
+--n_samples 10 \
+--data_path /scratch/project_2016517/junjie/dataset/near_format_data \
+--batch_size 131072
