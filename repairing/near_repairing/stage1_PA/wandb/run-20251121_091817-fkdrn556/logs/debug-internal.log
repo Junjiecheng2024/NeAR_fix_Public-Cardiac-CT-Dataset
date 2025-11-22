@@ -1,6 +1,0 @@
-{"time":"2025-11-21T09:18:18.017129598+02:00","level":"INFO","msg":"stream: starting","core version":"0.22.3"}
-{"time":"2025-11-21T09:18:18.602916971+02:00","level":"INFO","msg":"stream: created new stream","id":"fkdrn556"}
-{"time":"2025-11-21T09:18:18.603215424+02:00","level":"INFO","msg":"handler: started","stream_id":"fkdrn556"}
-{"time":"2025-11-21T09:18:18.604123292+02:00","level":"INFO","msg":"stream: started","id":"fkdrn556"}
-{"time":"2025-11-21T09:18:18.604181712+02:00","level":"INFO","msg":"writer: started","stream_id":"fkdrn556"}
-{"time":"2025-11-21T09:18:18.604207793+02:00","level":"INFO","msg":"sender: started","stream_id":"fkdrn556"}
