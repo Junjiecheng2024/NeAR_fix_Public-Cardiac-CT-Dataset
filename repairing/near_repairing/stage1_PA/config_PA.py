@@ -18,7 +18,7 @@ cfg = dict()
 
 # Paths
 cfg["base_path"] = "./checkpoints"
-cfg["run_flag"] = "PA_class7_shape_only_"
+cfg["run_flag"] = "PA_class7_"
 cfg['data_path'] = '/scratch/project_2016517/junjie/dataset/near_format_data'
 
 # Class information
@@ -26,8 +26,8 @@ cfg['class_name'] = 'PA'
 cfg['class_index'] = 7
 
 # Training parameters
-cfg["n_epochs"] = 400
-# Note: milestones已废弃，现在使用Cosine Annealing scheduler
+cfg["n_epochs"] = 500
+
 
 # Model parameters
 cfg['appearance'] = False  # Shape-only mode
@@ -40,9 +40,9 @@ cfg["target_resolution"] = 128
 cfg["n_training_samples"] = None 
 
 # Optimization
-cfg["lr"] = 1e-3
+cfg["lr"] = 2e-3
 cfg["batch_size"] = 1  
-cfg["gradient_accumulation_steps"] = 6
+cfg["gradient_accumulation_steps"] = 4
 cfg["eval_batch_size"] = 1  
 cfg["n_workers"] = 8
 
@@ -60,13 +60,13 @@ cfg["eval_interval"] = 5
 # Sampling strategy
 cfg["grid_noise"] = 0
 cfg["uniform_grid_noise"] = True
-cfg["sampling_bias_ratio"] = 0.05
+cfg["sampling_bias_ratio"] = 0
 cfg["sampling_dilation_radius"] = 2
 
 # Loss weights
-cfg['l2_penalty_weight'] = 1e-4
+cfg['l2_penalty_weight'] = 3e-4
 
 # Resume training from checkpoint
-cfg["resume_checkpoint"] = None
+cfg["resume_checkpoint"] = "/projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_PA/checkpoints/PA_class7_shape_only_251121_091803/best.ckpt"
 
 # Note: We want overfitting to get the best refined labels
