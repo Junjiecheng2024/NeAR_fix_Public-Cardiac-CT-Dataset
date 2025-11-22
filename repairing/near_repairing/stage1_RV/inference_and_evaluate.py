@@ -79,7 +79,7 @@ def generate_grid_coordinates(resolution):
     y = torch.linspace(-1, 1, resolution)
     z = torch.linspace(-1, 1, resolution)
     grid_x, grid_y, grid_z = torch.meshgrid(x, y, z, indexing='ij')
-    grid = torch.stack([grid_x, grid_y, grid_z], dim=-1)
+    grid = torch.stack([grid_z, grid_y, grid_x], dim=-1)
     return grid
 
 def inference_single_sample(model, sample_idx, resolution, batch_size=8192, verbose=True):
@@ -364,11 +364,16 @@ def main():
             if overlap_trans > overlap_asis:
                 print(f"[{sample_id}] Auto-correcting orientation: Transposing Original Mask (2,0,1). Overlap improved: {overlap_asis} -> {overlap_trans}")
                 original_mask = mask_trans
+                mask_was_transposed = True
+            else:
+                mask_was_transposed = False
             
             # 3. Load Original Image (for visualization and shape check)
             img_path = os.path.join(args.data_path, 'appearance', f'{sample_id}.npy')
             if not os.path.exists(img_path):
                 img_path = os.path.join(args.data_path, 'images', f'{sample_id}.npy')
+            if not os.path.exists(img_path):
+                img_path = os.path.join(args.data_path, 'images_256', f'{sample_id}.npy')
                 
             original_image = None
             if os.path.exists(img_path):
@@ -379,6 +384,12 @@ def main():
                 # NOTE: We already did auto-correction based on Refined Mask overlap above.
                 # So we can skip the shape-based check or just keep it as a sanity check.
                 # But since we trusted Refined Mask, let's trust the auto-correction.
+                
+                # FORCE TRANSPOSE IMAGE (X, Y, Z) -> (Z, Y, X)
+                # Based on inspection, Image is (X, Y, Z) and Mask is (Z, Y, X).
+                if len(original_image.shape) == 3:
+                     print(f"[{sample_id}] Transposing Original Image (2, 1, 0) to match (Z, Y, X) mask.")
+                     original_image = original_image.transpose(2, 1, 0)
             else:
                 print(f"Warning: Original image not found for {sample_id}")
 
