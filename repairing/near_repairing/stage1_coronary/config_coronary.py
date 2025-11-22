@@ -18,7 +18,7 @@ cfg = dict()
 
 # Paths
 cfg["base_path"] = "./checkpoints"
-cfg["run_flag"] = "Coronary_class9_shape_only_"
+cfg["run_flag"] = "Coronary_class9_"
 cfg['data_path'] = '/scratch/project_2016517/junjie/dataset/near_format_data'
 
 # Class information
@@ -26,8 +26,8 @@ cfg['class_name'] = 'Coronary'
 cfg['class_index'] = 9
 
 # Training parameters
-cfg["n_epochs"] = 1500  # Can increase to 1500 if needed
-# Note: milestones已废弃，现在使用Cosine Annealing scheduler
+cfg["n_epochs"] = 400  # Can increase to 1500 if needed
+
 
 # Model parameters
 cfg['appearance'] = False  # Shape-only mode
@@ -40,9 +40,9 @@ cfg["target_resolution"] = 128   # Dataset加载和验证时的分辨率
 cfg["n_training_samples"] = None  # Use all samples (指的是所有病例，不是采样点数)
 
 # Optimization
-cfg["lr"] = 1e-3  # 恢复初始学习率，快速学习
+cfg["lr"] = 2e-3  # 恢复初始学习率，快速学习
 cfg["batch_size"] = 1  
-cfg["gradient_accumulation_steps"] = 6  # 有效batch_size = 4
+cfg["gradient_accumulation_steps"] = 6  
 cfg["eval_batch_size"] = 1  
 cfg["n_workers"] = 8
 
@@ -61,14 +61,14 @@ cfg["eval_interval"] = 5  # 每10轮验证一次（128³训练更慢）
 # Sampling strategy
 cfg["grid_noise"] = 0  # Grid noise for data augmentation (阶段1暂不使用)
 cfg["uniform_grid_noise"] = True
-cfg["sampling_bias_ratio"] = 0  # 初始50%边界采样，训练中动态调整
+cfg["sampling_bias_ratio"] = 0.2  # 初始50%边界采样，训练中动态调整
 cfg["sampling_dilation_radius"] = 2  # Boundary region dilation
 
 # Loss weights
-cfg['l2_penalty_weight'] = 1e-4  # 降低L2正则化10倍，增加模型容量
+cfg['l2_penalty_weight'] = 3e-4  
 
 # Resume training from checkpoint
-cfg["resume_checkpoint"] = "/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/checkpoints/Coronary_class9_shape_only_251119_185259/best.ckpt"  # 继承enhanced训练的best model (Epoch 1, Dice 7.31%)
+cfg["resume_checkpoint"] = "/projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/checkpoints/Coronary_class9_shape_only_251121_105840/best.ckpt"  # 继承enhanced训练的best model (Epoch 1, Dice 7.31%)
 
 # Note: We want overfitting to get the best refined labels
 # So we use all samples as both train and eval, no validation split

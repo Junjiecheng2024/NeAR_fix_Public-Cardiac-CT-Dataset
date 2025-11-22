@@ -18,7 +18,7 @@ import time
 import importlib
 
 # 添加 near 模块路径到 Python 路径
-near_root = '/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset'
+near_root = '/projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset'
 if near_root not in sys.path:
     sys.path.insert(0, near_root)
 
@@ -26,6 +26,7 @@ import torch
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
+import wandb
 
 from lightning_module import RVNeARLightningModule
 from near.datasets.cardiac_dataset import CardiacClassDatasetWithBiasedSampling
@@ -155,8 +156,7 @@ def main(args):
         except Exception as e:
             print(f"Warning: failed to load resume checkpoint: {e}")
 
-
-    # WandB logger
+    wandb.login(key='d6891a1bb4397a24519ef1b36091aa1b77ea67e1')
     wandb_logger = WandbLogger(project='NeAR_stage1_RV', name=cfg['run_flag'])
 
     # Callbacks

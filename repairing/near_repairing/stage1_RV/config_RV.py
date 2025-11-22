@@ -56,7 +56,7 @@ cfg["warmup_ratio"] = 0.01  # 1% of total steps for warmup
 cfg["use_amp"] = True  # 使用自动混合精度训练，降低显存使用
 
 # Validation interval
-cfg["eval_interval"] = 5  # 每10轮验证一次（128³训练更慢）
+cfg["eval_interval"] = 10  # 每10轮验证一次（128³训练更慢）
 
 # Sampling strategy
 cfg["grid_noise"] = 0  # Grid noise for data augmentation (阶段1暂不使用)

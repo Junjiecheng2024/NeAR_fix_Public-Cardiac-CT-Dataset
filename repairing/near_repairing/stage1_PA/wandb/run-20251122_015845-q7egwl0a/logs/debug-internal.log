@@ -1,0 +1,7 @@
+{"time":"2025-11-22T01:58:46.288186134+02:00","level":"INFO","msg":"stream: starting","core version":"0.22.3"}
+{"time":"2025-11-22T01:58:46.78686449+02:00","level":"INFO","msg":"stream: created new stream","id":"q7egwl0a"}
+{"time":"2025-11-22T01:58:46.787149822+02:00","level":"INFO","msg":"handler: started","stream_id":"q7egwl0a"}
+{"time":"2025-11-22T01:58:46.78810318+02:00","level":"INFO","msg":"stream: started","id":"q7egwl0a"}
+{"time":"2025-11-22T01:58:46.78814781+02:00","level":"INFO","msg":"writer: started","stream_id":"q7egwl0a"}
+{"time":"2025-11-22T01:58:46.78817112+02:00","level":"INFO","msg":"sender: started","stream_id":"q7egwl0a"}
+{"time":"2025-11-22T12:45:03.323301114+02:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/c15919822199-samk-satakunta-university-of-applied-sciences/NeAR_stage1_PA/q7egwl0a/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}

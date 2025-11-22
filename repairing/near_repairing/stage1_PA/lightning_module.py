@@ -5,7 +5,7 @@ import os
 import sys
 
 # 添加 near 模块路径到 Python 路径
-near_root = '/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset'
+near_root = '/projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset'
 if near_root not in sys.path:
     sys.path.insert(0, near_root)
 
@@ -103,7 +103,7 @@ class PANeARLightningModule(pl.LightningModule):
         dice = dice_score(pred_prob, labels)
         dice_loss = 1.0 - dice
         
-        shape_loss = 0.85 * dice_loss + 0.15 * focal_loss
+        shape_loss = 8 * dice_loss + 2 * focal_loss
         l2_loss = latent_l2_penalty(encoded)
         
         total_loss = shape_loss + self.l2_penalty_weight * l2_loss
@@ -134,7 +134,7 @@ class PANeARLightningModule(pl.LightningModule):
         dice = dice_score(pred_prob, labels)
         dice_loss = 1.0 - dice
         
-        shape_loss = 0.7 * dice_loss + 0.3 * focal_loss
+        shape_loss = 8 * dice_loss + 2 * focal_loss
         l2_loss = latent_l2_penalty(encoded)
         total_loss = shape_loss + self.l2_penalty_weight * l2_loss
         
