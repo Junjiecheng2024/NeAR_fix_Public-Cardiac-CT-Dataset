@@ -5,7 +5,7 @@ repairing/near_repairing/stage1_coronary/checkpoints/*/training_loss.json
 # *.ckpt
 
 # Logs (optional: comment out if you want to include small logs)
-# *.log
+*.log
 
 # Python cache
 __pycache__/

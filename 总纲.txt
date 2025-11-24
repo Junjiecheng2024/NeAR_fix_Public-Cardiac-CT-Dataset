@@ -24,16 +24,34 @@ output: 64 -> 1）：隐式函数：F_c(z_{i,c}, p) → o ∈ (0,1)损失：BCE 
 优先级：Coronary (索引 9)＞LAA (索引 8)＞PV (索引 10)＞LA (索引 2)＞LV (索引 3)＞Myocardium (索引 1)＞Aorta (索引 6)＞RA (索引 4)＞RV (索引 5)＞PA (索引 7)
 然后做一轮解剖一致性修正：LAA 需连 LA；不连删掉。PV 需连 LA；不连删。CA 需在 Myo/Ao 附近；悬空小段删。Myo 填不合理小洞。心腔/Ao/PA 保留最大 CC，删假腔。
 各个类CC为：
-心肌 (Myocardium) ： 1.00 
-左房 (LA) ： 1.00 
-左室 (LV) ： 1.00 
-右房 (RA) ： 1.00 
-右室 (RV) ： 1.00 
-主动脉 (Aorta) ：2
-肺动脉 (PA) ： 1
-左心耳 (LAA)：1
-冠状动脉 (Coronary) ： 2
-肺静脉 (PV) ： 2
+Processing complete. Raw results saved to original_cc_full_dataset.csv
+--- Connected Components Statistics (Full Dataset, 6-connectivity) ---
+Class ID   Name            Mean CC    Max CC     Samples   
+------------------------------------------------------------
+1          Myocardium      5.7325     86         998       
+2          LA              51.3226    221        998       
+3          LV              1.0210     6          998       
+4          RA              1.0912     13         998       
+5          RV              1.3367     49         998       
+6          Aorta           2.0701     10         998       
+7          PA              2.7625     57         998       
+8          LAA             12.4820    49         998       
+9          Coronary        2.6042     10         998       
+10         PV              4.6794     66         998      
+
+从解剖学（Anatomy）的角度来看，理想情况下的连通分量（CC）应该是这样的：
+
+Class	Name	Ideal CC	Explanation
+1	Myocardium	1	心肌是一个连续的整体。数据中 CC=5.73 说明存在很多断裂或噪点。
+2	LA	1	左心房是一个单独的腔室。数据中 CC=51.32 非常异常，可能是把肺静脉的根部也算进去了，或者有很多细碎的噪声。
+3	LV	1	左心室是一个单独的腔室。数据 CC=1.02 非常接近理想值。
+4	RA	1	右心房是一个单独的腔室。数据 CC=1.09 非常接近理想值。
+5	RV	1	右心室是一个单独的腔室。数据 CC=1.34 说明有一些小碎片。
+6	Aorta	1	主动脉在解剖上是连续的。但如果 CT 视野（FOV）切掉了主动脉弓顶部，可能会导致升主动脉和降主动脉断开，变成 2 个。数据 CC=2.07 符合这个推测。
+7	PA	1	肺动脉主干分出左右肺动脉，是连通的。数据 CC=2.76 说明有断裂。
+8	LAA	1	左心耳是连在左房上的一个小囊，本身是 1 个。数据 CC=12.48 说明分割很碎。
+9	Coronary	2	冠状动脉起源于主动脉，分为左冠和右冠两支。如果不算主动脉连接，它们是 2 个独立的分量。数据 CC=2.60 比较合理。
+10	PV	4	肺静脉通常有 4 根（左上、左下、右上、右下）汇入左房。如果不算左房连接，它们是 4 个。数据 CC=4.68 比较符合解剖事实。
 
 
 阶段二目标：得到一套 高质量的多类标签 L^{ref}_i，这是后面训练统一隐式函数的监督信号。
@@ -174,7 +192,7 @@ stage1_coronary
 val dice： 0.38
 待完成：推理到256，然后进行可视化对比，如果效果不好，要再训练
 
-目前在跑： PA(400epochs), coronary, RV
+目前在跑：coronary，LAA， Myocardium， Aorta
 第二轮：
 cfg['l2_penalty_weight'] = 3e-4
 epoch = 500
@@ -194,3 +212,19 @@ python inference_and_evaluate.py \
 --n_samples 10 \
 --data_path /scratch/project_2016517/junjie/dataset/near_format_data \
 --batch_size 131072
+
+PA训练好了,val dice = 98整
+python inference_and_evaluate.py \
+--checkpoint /home/user/persistent/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_PA/checkpoints/PA_class7_251122_015831/best.ckpt \
+--output_dir class5_PA_results_256 \
+--resolution 256 \
+--target_class 7 \
+--n_samples 10 \
+--data_path /home/user/persistent/NeAR_fix_Public-Cardiac-CT-Dataset_backup/dataset/near_format_data \
+--batch_size 131072
+
+PA推理Summary:
+Mean Voxel Ratio: 0.9662
+Mean Original CC: 2.18
+Mean Refined CC: 2.25
+Results saved to class5_PA_results_256/evaluation_results.csv
