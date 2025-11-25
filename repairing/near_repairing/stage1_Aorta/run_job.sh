@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH -A project_2016517
+#SBATCH -A project_2016526
 #SBATCH -p gpumedium
 #SBATCH --gres=gpu:a100:4
 #SBATCH --mem=64G
-#SBATCH -t 24:00:00
+#SBATCH -t 36:00:00
 #SBATCH -o logs/%x_%j.out
 #SBATCH -e logs/%x_%j.err
 #SBATCH --cpus-per-task=8

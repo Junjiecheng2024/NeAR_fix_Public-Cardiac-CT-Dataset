@@ -18,7 +18,7 @@ cfg = dict()
 
 # Paths
 cfg["base_path"] = "./checkpoints"
-cfg["run_flag"] = "RA_class4_shape_only_"
+cfg["run_flag"] = "RA_class4_"
 cfg['data_path'] = '/scratch/project_2016517/junjie/dataset/near_format_data'
 
 # Class information
@@ -40,7 +40,7 @@ cfg["target_resolution"] = 128
 cfg["n_training_samples"] = None 
 
 # Optimization
-cfg["lr"] = 2e-3
+cfg["lr"] = 1e-3
 cfg["batch_size"] = 1  
 cfg["gradient_accumulation_steps"] = 6
 cfg["eval_batch_size"] = 1  
@@ -60,11 +60,11 @@ cfg["eval_interval"] = 5
 # Sampling strategy
 cfg["grid_noise"] = 0
 cfg["uniform_grid_noise"] = True
-cfg["sampling_bias_ratio"] = 0.05
+cfg["sampling_bias_ratio"] = 0.0
 cfg["sampling_dilation_radius"] = 2
 
 # Loss weights
-cfg['l2_penalty_weight'] = 1e-4
+cfg['l2_penalty_weight'] = 3e-4
 
 # Resume training from checkpoint
 cfg["resume_checkpoint"] = None

@@ -18,7 +18,7 @@ cfg = dict()
 
 # Paths
 cfg["base_path"] = "./checkpoints"
-cfg["run_flag"] = "LV_class3_shape_only_"
+cfg["run_flag"] = "LV_class3_"
 cfg['data_path'] = '/scratch/project_2016517/junjie/dataset/near_format_data'
 
 # Class information
@@ -26,11 +26,11 @@ cfg['class_name'] = 'LV'
 cfg['class_index'] = 3
 
 # Training parameters
-cfg["n_epochs"] = 400
-# Note: milestones已废弃，现在使用Cosine Annealing scheduler
+cfg["n_epochs"] = 1500
+
 
 # Model parameters
-cfg['appearance'] = False  # Shape-only mode
+cfg['appearance'] = False  
 cfg['decoder_channels'] = [64, 48, 32, 16]
 cfg['latent_dimension'] = 256
 
@@ -60,7 +60,7 @@ cfg["eval_interval"] = 5
 # Sampling strategy
 cfg["grid_noise"] = 0
 cfg["uniform_grid_noise"] = True
-cfg["sampling_bias_ratio"] = 0.05
+cfg["sampling_bias_ratio"] = 0
 cfg["sampling_dilation_radius"] = 2
 
 # Loss weights

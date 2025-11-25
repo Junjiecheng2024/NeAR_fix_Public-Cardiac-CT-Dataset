@@ -26,7 +26,7 @@ cfg['class_name'] = 'Coronary'
 cfg['class_index'] = 9
 
 # Training parameters
-cfg["n_epochs"] = 500  # Can increase to 1500 if needed
+cfg["n_epochs"] = 1000  # Can increase to 1500 if needed
 
 
 # Model parameters
@@ -40,17 +40,17 @@ cfg["target_resolution"] = 128   # Dataset加载和验证时的分辨率
 cfg["n_training_samples"] = None  # Use all samples (指的是所有病例，不是采样点数)
 
 # Optimization
-cfg["lr"] = 8e-4  # 恢复初始学习率，快速学习
+cfg["lr"] = 3e-4  # 恢复初始学习率，快速学习
 cfg["batch_size"] = 1  
 cfg["gradient_accumulation_steps"] = 6  
 cfg["eval_batch_size"] = 1  
-cfg["n_workers"] = 8
+cfg["n_workers"] = 16
 
 # Learning rate schedule 
 cfg["use_cosine_schedule"] = True  
 # cfg["milestones"] = [100, 200]  # Epoch 100和200降低学习率
 cfg["gamma"] = 0.5  # 每次降低50%
-cfg["warmup_ratio"] = 0.01  # 1% of total steps for warmup
+cfg["warmup_ratio"] = 0  # 1% of total steps for warmup
 
 # Mixed precision training (AMP)
 cfg["use_amp"] = True  # 使用自动混合精度训练，降低显存使用
@@ -61,11 +61,11 @@ cfg["eval_interval"] = 5  # 每10轮验证一次（128³训练更慢）
 # Sampling strategy
 cfg["grid_noise"] = 0  # Grid noise for data augmentation (阶段1暂不使用)
 cfg["uniform_grid_noise"] = True
-cfg["sampling_bias_ratio"] = 0  # 初始50%边界采样，训练中动态调整
-cfg["sampling_dilation_radius"] = 2  # Boundary region dilation
+cfg["sampling_bias_ratio"] = 0.4  # 初始50%边界采样，训练中动态调整
+cfg["sampling_dilation_radius"] = 3  # Boundary region dilation
 
 # Loss weights
-cfg['l2_penalty_weight'] = 3e-4  
+cfg['l2_penalty_weight'] = 1e-4  
 
 # Resume training from checkpoint
 cfg["resume_checkpoint"] = "/projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing/stage1_coronary/checkpoints/Coronary_class9_shape_only_251121_105840/best.ckpt"  # 继承enhanced训练的best model (Epoch 1, Dice 7.31%)

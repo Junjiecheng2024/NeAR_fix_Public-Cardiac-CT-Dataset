@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -A project_2016517
+#SBATCH -A project_2016526
 #SBATCH -p gpumedium
 #SBATCH --gres=gpu:a100:4
 #SBATCH --mem=64G

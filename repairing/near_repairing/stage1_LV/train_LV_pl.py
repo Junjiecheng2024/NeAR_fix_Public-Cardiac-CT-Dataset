@@ -7,7 +7,7 @@ import time
 import importlib
 
 # 添加 near 模块路径到 Python 路径
-near_root = '/projappl/project_2016517/chengjun/NeAR_fix_Public-Cardiac-CT-Dataset'
+near_root = '/projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset'
 if near_root not in sys.path:
     sys.path.insert(0, near_root)
 
