@@ -40,7 +40,7 @@ cfg["target_resolution"] = 128   # Dataset加载和验证时的分辨率
 cfg["n_training_samples"] = None  # Use all samples (指的是所有病例，不是采样点数)
 
 # Optimization
-cfg["lr"] = 3e-4  # 恢复初始学习率，快速学习
+cfg["lr"] = 5e-4  # 恢复初始学习率，快速学习
 cfg["batch_size"] = 1  
 cfg["gradient_accumulation_steps"] = 6  
 cfg["eval_batch_size"] = 1  
@@ -61,7 +61,7 @@ cfg["eval_interval"] = 5  # 每10轮验证一次（128³训练更慢）
 # Sampling strategy
 cfg["grid_noise"] = 0  # Grid noise for data augmentation (阶段1暂不使用)
 cfg["uniform_grid_noise"] = True
-cfg["sampling_bias_ratio"] = 0.4  # 初始50%边界采样，训练中动态调整
+cfg["sampling_bias_ratio"] = 0.2  # 初始50%边界采样，训练中动态调整
 cfg["sampling_dilation_radius"] = 3  # Boundary region dilation
 
 # Loss weights

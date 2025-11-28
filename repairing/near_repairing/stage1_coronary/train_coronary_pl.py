@@ -138,23 +138,14 @@ def main(args):
         gamma=cfg.get('gamma', 0.5),
     )
 
-    # Attempt to load existing checkpoint weights (if any)
     resume_ckpt = cfg.get('resume_checkpoint', None)
-    print(f"[DEBUG] resume_checkpoint in cfg: {resume_ckpt}")
-    if resume_ckpt:
-        print(f"[DEBUG] exists? {os.path.exists(resume_ckpt)}")
-
     if resume_ckpt and os.path.exists(resume_ckpt):
-        try:
-            state = torch.load(resume_ckpt, map_location='cpu')
-            try:
-                pl_module.model.load_state_dict(state)
-                print(f"Loaded pretrained weights into pl_module.model from {resume_ckpt}")
-            except Exception:
-                pl_module.load_state_dict(state, strict=False)
-                print(f"Loaded checkpoint into pl_module (partial) from {resume_ckpt}")
-        except Exception as e:
-            print(f"Warning: failed to load resume checkpoint: {e}")
+        ckpt = torch.load(resume_ckpt, map_location='cpu')
+        pl_module.load_state_dict(ckpt["state_dict"], strict=True)
+        print(f"[INFO] Loaded weights from {resume_ckpt}")
+    else:
+        print("[INFO] Training from scratch (no resume checkpoint)")
+    # Checkpoint loading is handled by trainer.fit(ckpt_path=...)
 
 
     wandb.login(key='d6891a1bb4397a24519ef1b36091aa1b77ea67e1')
@@ -190,7 +181,12 @@ def main(args):
     )
 
     # Fit
-    trainer.fit(pl_module, train_dataloaders=dm.train_dataloader(), val_dataloaders=dm.val_dataloader())
+    resume_ckpt = cfg.get('resume_checkpoint', None)
+    trainer.fit(
+        pl_module,
+        train_dataloaders=dm.train_dataloader(),
+        val_dataloaders=dm.val_dataloader(),
+    )
 
     print(f"\nTraining completed! Best checkpoint saved to: {base_path}/best.ckpt")
 

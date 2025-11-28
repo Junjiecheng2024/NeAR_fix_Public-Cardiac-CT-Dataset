@@ -93,7 +93,7 @@ class CoronaryNeARLightningModule(pl.LightningModule):
         )
         
         # Loss functions
-        self.focal_loss_fn = FocalLoss(alpha=0.5, gamma=6.0)
+        self.focal_loss_fn = FocalLoss(alpha=0.3, gamma=4.0)
         
         # Hyperparameters
         self.lr = lr
@@ -144,7 +144,7 @@ class CoronaryNeARLightningModule(pl.LightningModule):
         dice_loss = 1.0 - dice
         
         # Combined shape loss
-        shape_loss = 6 * dice_loss + 4 * focal_loss
+        shape_loss = 7 * dice_loss + 3 * focal_loss
         
         # L2 penalty on latent codes
         l2_loss = latent_l2_penalty(encoded)
@@ -187,7 +187,7 @@ class CoronaryNeARLightningModule(pl.LightningModule):
         dice = dice_score(pred_prob, labels)
         dice_loss = 1.0 - dice
         
-        shape_loss = 6 * dice_loss + 4 * focal_loss
+        shape_loss = 7 * dice_loss + 3 * focal_loss
         l2_loss = latent_l2_penalty(encoded)
         total_loss = shape_loss + self.l2_penalty_weight * l2_loss
         
