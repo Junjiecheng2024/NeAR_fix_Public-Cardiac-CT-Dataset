@@ -19,8 +19,8 @@ def process_single_file(args):
     path, filename = args
     results = []
     
-    # Define 6-connectivity structure (face adjacency)
-    structure = generate_binary_structure(3, 1)
+    # Define 26-connectivity structure (Face + Edge + Corner)
+    structure = generate_binary_structure(3, 3)
     
     try:
         img = nib.load(path)
@@ -30,14 +30,31 @@ def process_single_file(args):
         
         for class_id, class_name in CLASS_NAMES.items():
             mask = (data == class_id).astype(np.uint8)
-            if mask.sum() > 0:
-                _, n_components = label(mask, structure=structure)
+            voxel_total = mask.sum()
+            
+            if voxel_total > 0:
+                labeled_array, n_components = label(mask, structure=structure)
+                
+                # Calculate component sizes
+                _, counts = np.unique(labeled_array, return_counts=True)
+                # counts[0] is background, remove it
+                component_sizes = counts[1:]
+                
+                max_cc_size = component_sizes.max()
+                # Main component ratio
+                main_ratio = max_cc_size / voxel_total
+                
+                # Significant fragments count (volume > 5% of total volume)
+                significant_cc_count = np.sum(component_sizes > (voxel_total * 0.05))
+
                 results.append({
                     'filename': filename,
                     'class_id': class_id,
                     'class_name': class_name,
                     'cc_count': n_components,
-                    'voxel_count': mask.sum()
+                    'significant_cc': significant_cc_count,
+                    'main_ratio': main_ratio,
+                    'voxel_count': voxel_total
                 })
             else:
                 results.append({
@@ -45,6 +62,8 @@ def process_single_file(args):
                     'class_id': class_id,
                     'class_name': class_name,
                     'cc_count': 0,
+                    'significant_cc': 0,
+                    'main_ratio': 0,
                     'voxel_count': 0
                 })
                 
@@ -69,7 +88,7 @@ def calculate_cc_stats():
     
     # Initialize CSV
     with open(output_csv, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['filename', 'class_id', 'class_name', 'cc_count', 'voxel_count'])
+        writer = csv.DictWriter(f, fieldnames=['filename', 'class_id', 'class_name', 'cc_count', 'significant_cc', 'main_ratio', 'voxel_count'])
         writer.writeheader()
     
     # Run multiprocessing
@@ -85,7 +104,7 @@ def calculate_cc_stats():
                 all_results.extend(file_results)
                 # Append to CSV incrementally
                 with open(output_csv, 'a', newline='') as f:
-                    writer = csv.DictWriter(f, fieldnames=['filename', 'class_id', 'class_name', 'cc_count', 'voxel_count'])
+                    writer = csv.DictWriter(f, fieldnames=['filename', 'class_id', 'class_name', 'cc_count', 'significant_cc', 'main_ratio', 'voxel_count'])
                     writer.writerows(file_results)
 
     print(f"\nProcessing complete. Raw results saved to {output_csv}")
@@ -96,9 +115,9 @@ def calculate_cc_stats():
         print("No results found!")
         return
 
-    print("\n--- Connected Components Statistics (Full Dataset, 6-connectivity) ---")
-    print(f"{'Class ID':<10} {'Name':<15} {'Mean CC':<10} {'Max CC':<10} {'Samples':<10}")
-    print("-" * 60)
+    print("\n--- Connected Components Statistics (Full Dataset, 26-connectivity) ---")
+    print(f"{'Class ID':<10} {'Name':<15} {'Mean CC':<10} {'Sig CC':<10} {'Main Ratio':<12} {'Max CC':<10} {'Samples':<10}")
+    print("-" * 80)
     
     summary_stats = []
     for class_id in CLASS_NAMES.keys():
@@ -108,14 +127,18 @@ def calculate_cc_stats():
         
         if not present_df.empty:
             mean_cc = present_df['cc_count'].mean()
+            mean_sig_cc = present_df['significant_cc'].mean()
+            mean_ratio = present_df['main_ratio'].mean()
             max_cc = present_df['cc_count'].max()
             n_samples = len(present_df)
             
-            print(f"{class_id:<10} {CLASS_NAMES[class_id]:<15} {mean_cc:<10.4f} {max_cc:<10} {n_samples:<10}")
+            print(f"{class_id:<10} {CLASS_NAMES[class_id]:<15} {mean_cc:<10.4f} {mean_sig_cc:<10.4f} {mean_ratio:<12.4f} {max_cc:<10} {n_samples:<10}")
             summary_stats.append({
                 'Class ID': class_id,
                 'Name': CLASS_NAMES[class_id],
                 'Mean CC': mean_cc,
+                'Mean Significant CC': mean_sig_cc,
+                'Mean Main Ratio': mean_ratio,
                 'Max CC': max_cc,
                 'Samples': n_samples
             })
