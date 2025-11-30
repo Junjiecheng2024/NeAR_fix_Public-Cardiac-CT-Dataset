@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Data validation script for preprocessed datasets."""
+"""
+Script to validate the integrity and format of the input dataset.
+"""
 import os
 import sys
 import numpy as np

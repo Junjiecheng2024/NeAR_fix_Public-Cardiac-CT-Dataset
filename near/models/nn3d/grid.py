@@ -203,26 +203,26 @@ class GatherGridsFromVolumes:
             - grids: (B, D, H, W, 3)
             - labels: (B, C, D, H, W)
         """
-        # 确保 volumes 是 5D tensor (B, C, D, H, W)
+        # Ensure volumes is 5D tensor (B, C, D, H, W)
         if volumes.dim() == 4:
             volumes = volumes.unsqueeze(1)  # -> (B, 1, D, H, W)
         
-        # 强制转换到CPU并保证是float
+        # Force to CPU and ensure float
         volumes = volumes.cpu().float()
         
-        # 生成grid (在CPU上) - shape: (B, D, H, W, 3)
+        # Generate grid (on CPU) - shape: (B, D, H, W, 3)
         if self.boundary_bias_ratio > 0:
             grids = self.sample_biased_grid(volumes, self.grid_sampler.resolution)
         else:
             grids = self.grid_sampler.generate_batch_grid(volumes.shape[0])
-            # 确保grids在CPU上
+            # Ensure grids are on CPU
             grids = grids.cpu()
         
-        # 再次确认所有tensor在CPU上
+        # Double check all tensors are on CPU
         assert volumes.device.type == 'cpu', f"volumes should be on CPU but is on {volumes.device}"
         assert grids.device.type == 'cpu', f"grids should be on CPU but is on {grids.device}"
         
-        # grid_sample (在CPU上)
+        # grid_sample (on CPU)
         labels = F.grid_sample(
             volumes,
             grids,

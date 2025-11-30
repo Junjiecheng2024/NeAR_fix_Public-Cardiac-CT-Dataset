@@ -59,5 +59,6 @@ wandb/
 
 *.npy
 *.nii
+*.png
 
 

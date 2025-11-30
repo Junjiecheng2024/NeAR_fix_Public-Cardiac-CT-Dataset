@@ -1,5 +1,6 @@
 """
-Script to calculate connected component statistics for the original dataset.
+Script to calculate connected component statistics for Phase 2 outputs.
+Used to verify the effectiveness of morphological cleaning.
 """
 import os
 import numpy as np
@@ -9,7 +10,8 @@ from tqdm import tqdm
 import pandas as pd
 import multiprocessing
 import csv
-import time
+import glob
+import cc3d
 
 # Class mapping
 CLASS_NAMES = {
@@ -17,58 +19,61 @@ CLASS_NAMES = {
     6: "Aorta", 7: "PA", 8: "LAA", 9: "Coronary", 10: "PV"
 }
 
+BASE_DIR = "/home/user/persistent/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/phase2"
+
 def process_single_file(args):
-    """Process a single NIfTI file and return CC counts for all classes."""
-    path, filename = args
+    """Process a single .npy file and return CC counts for the target class."""
+    path, filename, class_id, class_name = args
     results = []
     
     # Define 26-connectivity structure (Face + Edge + Corner)
     structure = generate_binary_structure(3, 3)
     
     try:
-        img = nib.load(path)
-        # Load data into memory
-        data = np.asanyarray(img.dataobj)
-        data = np.rint(data).astype(np.uint8)
+        # Load .npy mask
+        mask = np.load(path)
+        # Ensure binary
+        mask = (mask > 0.5).astype(np.uint8)
         
-        for class_id, class_name in CLASS_NAMES.items():
-            mask = (data == class_id).astype(np.uint8)
-            voxel_total = mask.sum()
+        voxel_total = mask.sum()
+        
+        if voxel_total > 0:
+            # Use cc3d for faster processing
+            # connectivity=26 matches scipy structure(3,3)
+            labeled_array, n_components = cc3d.connected_components(mask, connectivity=26, return_N=True)
             
-            if voxel_total > 0:
-                labeled_array, n_components = label(mask, structure=structure)
-                
-                # Calculate component sizes
-                _, counts = np.unique(labeled_array, return_counts=True)
-                # counts[0] is background, remove it
-                component_sizes = counts[1:]
+            if n_components > 0:
+                stats = cc3d.statistics(labeled_array)
+                # stats['voxel_counts'][0] is background
+                component_sizes = stats['voxel_counts'][1:]
                 
                 max_cc_size = component_sizes.max()
-                # Main component ratio
                 main_ratio = max_cc_size / voxel_total
-                
-                # Significant fragments count (volume > 5% of total volume)
                 significant_cc_count = np.sum(component_sizes > (voxel_total * 0.05))
-
-                results.append({
-                    'filename': filename,
-                    'class_id': class_id,
-                    'class_name': class_name,
-                    'cc_count': n_components,
-                    'significant_cc': significant_cc_count,
-                    'main_ratio': main_ratio,
-                    'voxel_count': voxel_total
-                })
             else:
-                results.append({
-                    'filename': filename,
-                    'class_id': class_id,
-                    'class_name': class_name,
-                    'cc_count': 0,
-                    'significant_cc': 0,
-                    'main_ratio': 0,
-                    'voxel_count': 0
-                })
+                n_components = 0
+                significant_cc_count = 0
+                main_ratio = 0
+
+            results.append({
+                'filename': filename,
+                'class_id': class_id,
+                'class_name': class_name,
+                'cc_count': n_components,
+                'significant_cc': significant_cc_count,
+                'main_ratio': main_ratio,
+                'voxel_count': voxel_total
+            })
+        else:
+            results.append({
+                'filename': filename,
+                'class_id': class_id,
+                'class_name': class_name,
+                'cc_count': 0,
+                'significant_cc': 0,
+                'main_ratio': 0,
+                'voxel_count': 0
+            })
                 
     except Exception as e:
         print(f"Error processing {filename}: {e}")
@@ -77,17 +82,33 @@ def process_single_file(args):
     return results
 
 def calculate_cc_stats():
-    data_dir = '/home/user/persistent/NeAR_fix_Public-Cardiac-CT-Dataset_backup/dataset/original/segmentations'
-    output_csv = 'original_cc_full_dataset.csv'
+    output_csv = 'phase2_cc_full_dataset.csv'
     
-    files = [f for f in os.listdir(data_dir) if f.endswith('.nii.gz')]
-    files.sort()
-    # files = files[:100] # Debug: test on 100 files first? No, user wants full.
+    all_tasks = []
     
-    print(f"Found {len(files)} files. Starting processing on {multiprocessing.cpu_count()} cores...")
-    
-    # Prepare arguments
-    tasks = [(os.path.join(data_dir, f), f) for f in files]
+    print("Scanning files...")
+    for class_id, class_name in CLASS_NAMES.items():
+        # Find directory
+        dir_name = f"class{class_id}_{class_name}_results_256_processed"
+        # Try both locations (direct or nested)
+        path1 = os.path.join(BASE_DIR, dir_name)
+        path2 = os.path.join(BASE_DIR, f"class{class_id}_{class_name}", dir_name)
+        
+        target_dir = None
+        if os.path.isdir(path1):
+            target_dir = path1
+        elif os.path.isdir(path2):
+            target_dir = path2
+            
+        if target_dir:
+            files = glob.glob(os.path.join(target_dir, "*.npy"))
+            print(f"Class {class_id} ({class_name}): Found {len(files)} files in {target_dir}")
+            for f in files:
+                all_tasks.append((f, os.path.basename(f), class_id, class_name))
+        else:
+            print(f"Warning: Directory not found for Class {class_id} ({class_name})")
+
+    print(f"Total files to process: {len(all_tasks)}")
     
     # Initialize CSV
     with open(output_csv, 'w', newline='') as f:
@@ -95,17 +116,14 @@ def calculate_cc_stats():
         writer.writeheader()
     
     # Run multiprocessing
-    # Use a safe number of workers to avoid OOM. 8 is usually safe for 64GB RAM.
-    num_workers = min(8, multiprocessing.cpu_count())
+    num_workers = min(16, multiprocessing.cpu_count())
     
     all_results = []
     
     with multiprocessing.Pool(processes=num_workers) as pool:
-        # Use imap_unordered for better responsiveness
-        for file_results in tqdm(pool.imap_unordered(process_single_file, tasks), total=len(tasks)):
+        for file_results in tqdm(pool.imap_unordered(process_single_file, all_tasks), total=len(all_tasks)):
             if file_results:
                 all_results.extend(file_results)
-                # Append to CSV incrementally
                 with open(output_csv, 'a', newline='') as f:
                     writer = csv.DictWriter(f, fieldnames=['filename', 'class_id', 'class_name', 'cc_count', 'significant_cc', 'main_ratio', 'voxel_count'])
                     writer.writerows(file_results)
@@ -118,14 +136,13 @@ def calculate_cc_stats():
         print("No results found!")
         return
 
-    print("\n--- Connected Components Statistics (Full Dataset, 26-connectivity) ---")
+    print("\n--- Connected Components Statistics (Phase 2 Processed, 26-connectivity) ---")
     print(f"{'Class ID':<10} {'Name':<15} {'Mean CC':<10} {'Sig CC':<10} {'Main Ratio':<12} {'Max CC':<10} {'Samples':<10}")
     print("-" * 80)
     
     summary_stats = []
     for class_id in CLASS_NAMES.keys():
         class_df = df[df['class_id'] == class_id]
-        # Only consider samples where the class is present (voxel_count > 0)
         present_df = class_df[class_df['voxel_count'] > 0]
         
         if not present_df.empty:
@@ -148,10 +165,9 @@ def calculate_cc_stats():
         else:
             print(f"{class_id:<10} {CLASS_NAMES[class_id]:<15} {'N/A':<10} {'N/A':<10} {0:<10}")
             
-    # Save summary
     summary_df = pd.DataFrame(summary_stats)
-    summary_df.to_csv('original_cc_summary.csv', index=False)
-    print("\nSummary saved to original_cc_summary.csv")
+    summary_df.to_csv('phase2_cc_summary.csv', index=False)
+    print("\nSummary saved to phase2_cc_summary.csv")
 
 if __name__ == "__main__":
     calculate_cc_stats()
