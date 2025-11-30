@@ -1,0 +1,320 @@
+这是一个基于你提供的 总纲  以及详细的 形态学处理建议  整理出的成熟阶段二实施方案。
+
+
+此方案的核心在于：分层处理（Tiered Strategy）。即先做通用的平滑和修补，再进行连通分量（CC）过滤，最后应用严格的解剖学规则。
+
+一、 核心逻辑与参数配置表
+根据解剖学特征 和处理策略 ，我们将 10 个类分为三组策略。
+
+
+1. 大器官组 (Big Structures)
+对象：LV, RV, RA, LA, Aorta, PA, Myocardium
+
+特征：体积大，通常为单连通（Aorta/LA/PA 可能因截断有 2 个）。
+
+策略：允许 Fill Holes（Myo 除外），主要保留 Top-1 或 Top-2。
+
+2. 细微结构组 (Thin/Small Structures)
+对象：Coronary (CA), LAA, PV
+
+
+特征：细长或分散，绝对禁止 Fill Holes（否则填死管腔）。
+
+策略：只能做轻微 Closing，使用 Top-K 或 Ratio 过滤。
+
+3. 特殊规则 (Special Rules)
+
+Myocardium (Class 1): 环状结构。不能直接 fill holes。使用 "Dilate -> Fill -> Erode" trick 。
+
+
+Coronary (Class 9): 最难修复。由于 Val Dice 只有 51% ，断裂严重。策略是保留前 2 个大分量（对应左/右冠）并做额外闭运算连接断点 。
+
+
+二、 实施代码：perform_morphology_v2.py
+这是核心脚本。它读取 Phase 1 生成的 .npy，执行清洗，并同时保存清理后的 .npy（供 Phase 3 融合）和 .nii.gz（供可视化检查）。
+
+Python
+
+import os
+import argparse
+import numpy as np
+import nibabel as nib
+import cc3d
+from scipy.ndimage import binary_closing, binary_fill_holes, binary_dilation, binary_erosion, generate_binary_structure
+from tqdm import tqdm
+import glob
+import pandas as pd
+
+# ================= 配置区域 (基于 ) =================
+# radius: Closing 操作的半径 (voxel)
+# fill_holes: 是否填补内部空洞 (注意：细管状结构填补需谨慎)
+# strategy: 'top_k' (保留前k个) 或 'ratio' (保留体积 > max_vol * ratio 的块)
+# k: 保留的数量
+# min_vol: 绝对体积阈值，小于此值的 CC 直接删除 (针对 256^3 分辨率)
+
+CONFIG = {
+    # === Group 1: 大器官 ===
+    # Myocardium: 特殊处理 (False fill_holes here, handle in step3)
+    1: {'name': 'Myocardium', 'radius': 2, 'fill_holes': False, 'strategy': 'top_k', 'k': 1, 'min_vol': 500},
+    # LA: 允许 2 个，防止 PV 入口处截断
+    2: {'name': 'LA',         'radius': 2, 'fill_holes': True,  'strategy': 'top_k', 'k': 2, 'min_vol': 500},
+    3: {'name': 'LV',         'radius': 2, 'fill_holes': True,  'strategy': 'top_k', 'k': 1, 'min_vol': 500},
+    4: {'name': 'RA',         'radius': 2, 'fill_holes': True,  'strategy': 'top_k', 'k': 1, 'min_vol': 500},
+    5: {'name': 'RV',         'radius': 2, 'fill_holes': True,  'strategy': 'top_k', 'k': 1, 'min_vol': 500},
+    # Aorta: 允许 2 个 (升/降主动脉可能断开)
+    6: {'name': 'Aorta',      'radius': 2, 'fill_holes': True,  'strategy': 'top_k', 'k': 2, 'min_vol': 500},
+    # PA: 允许 2 个 (左右肺动脉分叉处可能断开)
+    7: {'name': 'PA',         'radius': 2, 'fill_holes': True,  'strategy': 'top_k', 'k': 2, 'min_vol': 200},
+    
+    # === Group 2: 细微结构 (严禁 Fill Holes) ===
+    # LAA: 左心耳，单连通
+    8: {'name': 'LAA',        'radius': 1, 'fill_holes': False, 'strategy': 'top_k', 'k': 1, 'min_vol': 50},
+    # Coronary: 左冠+右冠=2。由于Dice低(51%)，为了不误删，使用 Ratio 策略更稳妥，或者宽松的 Top-2
+    # 这里采用 MVP 建议：Top-2 
+    9: {'name': 'Coronary',   'radius': 1, 'fill_holes': False, 'strategy': 'top_k', 'k': 2, 'min_vol': 50},
+    # PV: 4 根肺静脉
+    10:{'name': 'PV',         'radius': 1, 'fill_holes': False, 'strategy': 'top_k', 'k': 4, 'min_vol': 50},
+}
+
+def step1_general_morphology(mask, cfg):
+    """Step 1: 通用闭运算 + 大器官填洞 """
+    # 1. Binary Closing (缝合小裂缝)
+    if cfg['radius'] > 0:
+        mask = binary_closing(mask, iterations=cfg['radius']).astype(np.uint8)
+    
+    # 2. Fill Holes (仅针对配置为 True 的大器官)
+    if cfg['fill_holes']:
+        mask = binary_fill_holes(mask).astype(np.uint8)
+        
+    return mask
+
+def step2_cc_filtering(mask, cfg):
+    """Step 2: 连通分量分析与过滤 """
+    # 使用 26-connectivity (更适合血管等细长结构)
+    labels_out, N = cc3d.connected_components(mask, connectivity=26, return_N=True)
+    
+    if N == 0:
+        return np.zeros_like(mask), 0, 0
+        
+    stats = cc3d.statistics(labels_out)
+    voxel_counts = stats['voxel_counts'][1:] # 排除背景0
+    
+    # 排序：从大到小
+    sorted_indices = np.argsort(voxel_counts)[::-1]
+    max_vol = voxel_counts[sorted_indices[0]]
+    
+    keep_labels = []
+    
+    # --- 策略执行 ---
+    if cfg['strategy'] == 'top_k':
+        # 尝试保留前 K 个
+        potential_k = min(N, cfg['k'])
+        candidates = sorted_indices[:potential_k]
+        
+        # 二次检查：防止保留了极小的噪点
+        # 如果第 2 个 CC 只有最大 CC 的 1% 不到，且小于 min_vol，则不保留
+        valid_candidates = []
+        for idx in candidates:
+            vol = voxel_counts[idx]
+            # 必须大于绝对体积阈值
+            if vol > cfg['min_vol']:
+                # 如果是第2/3/4个分量，还需检查相对比例 (例如 > 1%)
+                if idx == sorted_indices[0] or (vol / max_vol > 0.01):
+                    valid_candidates.append(idx)
+        
+        # 兜底：至少保留最大的 1 个 (除非最大的都小于 min_vol，那说明全是噪声)
+        if not valid_candidates and max_vol > 10: 
+             valid_candidates.append(sorted_indices[0])
+             
+        keep_labels = [i + 1 for i in valid_candidates]
+
+    # 重构 mask
+    mask_filtered = np.isin(labels_out, keep_labels).astype(np.uint8)
+    
+    return mask_filtered, N, len(keep_labels)
+
+def step3_per_class_special(mask, class_id):
+    """Step 3: 特定类的特殊 Trick """
+    
+    # === Myocardium Trick: Dilate -> Fill -> Erode ===
+    if class_id == 1: 
+        # 防止心肌壁内部有洞，但不填满心室
+        dilated = binary_dilation(mask, iterations=2).astype(np.uint8)
+        filled = binary_fill_holes(dilated).astype(np.uint8)
+        eroded = binary_erosion(filled, iterations=2).astype(np.uint8)
+        # 保持原始边界，只补洞：取交集或直接用 eroded (NeAR本身光滑，erode回去一般没问题)
+        return eroded
+    
+    # === Coronary Trick: 额外连接断点 ===
+    if class_id == 9:
+        # 冠脉容易断，额外做一次 radius=1 的 closing 试图连接断开的分支
+        mask = binary_closing(mask, iterations=1).astype(np.uint8)
+        
+    return mask
+
+def process_directory(args):
+    input_dir = args.input_dir
+    output_dir = args.output_dir
+    ref_dir = args.ref_dir
+    target_class = args.target_class
+    
+    os.makedirs(output_dir, exist_ok=True)
+    cfg = CONFIG[target_class]
+    
+    npy_files = glob.glob(os.path.join(input_dir, "*.npy"))
+    print(f"--- Processing Class {target_class}: {cfg['name']} ---")
+    print(f"Strategy: {cfg}")
+    
+    stats_list = []
+    
+    for npy_path in tqdm(npy_files):
+        filename = os.path.basename(npy_path)
+        file_id = filename.split('.')[0]
+        
+        # Load
+        try:
+            data = np.load(npy_path)
+            mask = (data > 0.5).astype(np.uint8)
+        except Exception as e:
+            print(f"Error loading {filename}: {e}")
+            continue
+            
+        # Step 1: General
+        mask_s1 = step1_general_morphology(mask, cfg)
+        
+        # Step 2: CC Filter
+        mask_s2, original_cc, final_cc = step2_cc_filtering(mask_s1, cfg)
+        
+        # Step 3: Special
+        mask_final = step3_per_class_special(mask_s2, target_class)
+        
+        # Save .npy (for Stage 3)
+        np.save(os.path.join(output_dir, filename), mask_final)
+        
+        # Save .nii.gz (for Visualization)
+        if ref_dir:
+            # 寻找对应的原始 nii 文件以获取 affine
+            # 路径逻辑根据你的工程细节调整
+            candidates = [
+                os.path.join(ref_dir, f"{file_id}.nii.gz"),
+                os.path.join(ref_dir, "segmentations", f"{file_id}.nii.gz")
+            ]
+            ref_path = next((p for p in candidates if os.path.exists(p)), None)
+            
+            if ref_path:
+                ref_img = nib.load(ref_path)
+                new_img = nib.Nifti1Image(mask_final, ref_img.affine, ref_img.header)
+                nib.save(new_img, os.path.join(output_dir, f"{file_id}_clean.nii.gz"))
+        
+        stats_list.append({
+            'filename': filename,
+            'original_cc': original_cc,
+            'final_cc': final_cc
+        })
+        
+    # 保存统计 CSV
+    df = pd.DataFrame(stats_list)
+    df.to_csv(os.path.join(output_dir, 'morphology_stats.csv'), index=False)
+    print(f"Done. Stats saved to {os.path.join(output_dir, 'morphology_stats.csv')}")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input_dir", required=True, help="Path to folder with .npy files")
+    parser.add_argument("--output_dir", required=True, help="Where to save result .npy and .nii.gz")
+    parser.add_argument("--target_class", type=int, required=True)
+    parser.add_argument("--ref_dir", default=None, help="Path to original dataset for NIfTI headers")
+    
+    args = parser.parse_args()
+    process_directory(args)
+三、 自动化执行脚本：run_phase2.sh
+不需要手动跑 10 次。将以下脚本保存为 run_phase2.sh，并在 compute node 上运行。
+
+此脚本假设你的目录结构符合你在 中描述的路径。
+
+Bash
+
+#!/bin/bash
+# 阶段二批量形态学处理脚本
+
+# 基础路径设置
+BASE_DIR="/home/user/persistent/NeAR_fix_Public-Cardiac-CT-Dataset_backup" # 请根据实际情况修改
+REF_DIR="${BASE_DIR}/dataset/original" # 包含 segmentations/*.nii.gz
+CODE_DIR="/projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/near_repairing"
+
+# 激活环境 (根据你的描述 )
+source /projappl/project_2016517/JunjieCheng/junjieenv/bin/activate
+
+# 循环处理所有类 (1-10)
+# 对应关系: 1=Myo, 2=LA, 3=LV, 4=RA, 5=RV, 6=Ao, 7=PA, 8=LAA, 9=Coronary, 10=PV
+for class_id in {1..10}
+do
+    # 定义类名，用于寻找文件夹 (需与你之前的 output_dir 命名一致)
+    case $class_id in
+        1) CLASS_NAME="Myocardium"; DIR_NAME="class1_Myocardium_results_256" ;;
+        2) CLASS_NAME="LA";         DIR_NAME="class2_LA_results_256" ;;
+        3) CLASS_NAME="LV";         DIR_NAME="class3_LV_results_256" ;;
+        4) CLASS_NAME="RA";         DIR_NAME="class4_RA_results_256" ;;
+        5) CLASS_NAME="RV";         DIR_NAME="class5_RV_results_256" ;;
+        6) CLASS_NAME="Aorta";      DIR_NAME="class6_Aorta_results_256" ;;
+        7) CLASS_NAME="PA";         DIR_NAME="class7_PA_results_256" ;;
+        8) CLASS_NAME="LAA";        DIR_NAME="class8_LAA_results_256" ;;
+        9) CLASS_NAME="Coronary";   DIR_NAME="class9_Coronary_results_256" ;;
+        10) CLASS_NAME="PV";        DIR_NAME="class10_PV_results_256" ;;
+    esac
+
+    INPUT_PATH="${CODE_DIR}/${DIR_NAME}"
+    OUTPUT_PATH="${CODE_DIR}/${DIR_NAME}_processed"
+    
+    echo "=================================================="
+    echo "Starting Phase 2 for Class ${class_id}: ${CLASS_NAME}"
+    echo "Input: ${INPUT_PATH}"
+    echo "Output: ${OUTPUT_PATH}"
+    
+    # 检查输入目录是否存在
+    if [ ! -d "$INPUT_PATH" ]; then
+        echo "WARNING: Input directory ${INPUT_PATH} does not exist. Skipping."
+        continue
+    fi
+
+    # 运行 Python 脚本
+    python perform_morphology_v2.py \
+        --input_dir "$INPUT_PATH" \
+        --output_dir "$OUTPUT_PATH" \
+        --target_class $class_id \
+        --ref_dir "$REF_DIR"
+
+    echo "Finished Class ${class_id}"
+    echo "=================================================="
+done
+
+echo "Phase 2 All Done!"
+四、 验证与检查计划
+运行完脚本后，你需要做以下检查，确保阶段二目标（Clean Per-class GT）达成 ：
+
+查看 CSV 统计
+
+进入每个类的 _processed 文件夹，打开 morphology_stats.csv。
+
+检查重点：
+
+LV/RV/Myo 的 final_cc 是否大部分稳定在 1？
+
+Coronary 的 final_cc 是否在 1~2 之间？如果全是 0，说明被误删光了（阈值太严）。
+
+PA 的 final_cc 是否在 1~2 之间？
+
+可视化验证 (ITK-SNAP)
+
+重点检查 Coronary (Class 9)：打开几个样本的 _clean.nii.gz。
+
+Check: 血管是否连续？有没有断成一段一段的？
+
+Check: 左冠和右冠是否都保留了？
+
+重点检查 Myocardium (Class 1)：
+
+Check: 心肌壁里面还有没有洞？心室里面有没有被错误填满？
+
+准备阶段三
+
+确认所有 _processed 文件夹里都有 .npy 文件。这些文件将作为 Phase 3 多类融合和解剖一致性修正的输入。

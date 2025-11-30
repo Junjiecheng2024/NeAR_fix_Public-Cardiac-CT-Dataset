@@ -46,3 +46,18 @@ wandb/
 
 # 忽略所有 .err 文件
 *.err
+*.nii.gz
+
+*.doc
+*.docx
+
+# 1. 忽略所有 .txt 结尾的文件
+*.txt
+
+# 2. 但是，不要忽略（重新包含）requirements.txt
+!requirements.txt
+
+*.npy
+*.nii
+
+

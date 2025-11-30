@@ -1,0 +1,178 @@
+✅ Stage 3：多类融合 & 解剖一致性修正规则（Action Plan）
+
+Stage 3 的核心任务只有两件：
+1. 解决多类之间的冲突（overlap、空洞、穿插）。
+2. 加入解剖一致性（PV 必须接 LA、LAA 必须接 LA、Coronary 必须接 Aorta/Myo、心肌必须包住腔室……）。
+
+最终输出是：一个 11 类（含背景）的最终 segmentation.nii.gz，没有拓扑矛盾，符合整体 anatomy。
+
+________________________________________
+
+🍱 总体结构
+
+def stage3_fusion( all_class_masks ):
+    # 1. 全局冲突解决（优先级）
+    fused = resolve_priority_overlap ( all_class_masks )
+    
+    # 2. 解剖一致性修正（class-aware）
+    fused = enforce_anatomical_constraints (fused)
+    
+    # 3. 最终 sanity check
+    fused = global_sanity (fused)
+    
+    return fused
+
+________________________________________
+
+1️⃣ 全局冲突解决（类别优先级）
+
+总纲写得非常清楚：CAs > Myo，PVs > LAA，LAA > CAs。
+每个体素只能属于一个类。
+
+这是 Stage 3 的第一步：
+
+✔ 实现方式（简单 & 稳）：
+按优先级，从高到低依次“写入”最终 mask：
+
+priority = [
+    Coronary (9),
+    LAA (8),
+    PV (10),
+    Myocardium (1),
+    LV, RV, LA, RA (2,3,4,5),
+    Aorta (6),
+    PA (7),
+    Background (0)
+]
+
+然后：
+final = zeros_like (mask)
+for cls in priority:
+    final[ all_class_masks [ cls ] == 1] = cls
+
+🎯 效果：
+• 所有重叠自动解决
+• 所有类按优先级落下
+• 不涉及几何改变，不会破坏 Stage 2 形态
+
+________________________________________
+
+2️⃣ 解剖一致性修正（重点：PV/LAA/CAs）
+
+Stage 3 的“灵魂”就是这里。下面是必须做，且最有价值的 7 条规则，按“难度从低到高”排好了。每条都有可以直接写代码的实现方式。
+
+________________________________________
+
+Rule 1：腔室内不能有别的类（心肌包住腔室）
+
+做法：
+1. 对最终 mask 取出 LA/LV/RA/RV 的 union
+2. 对 Myo 做一次 dilate(r=1~2) 当作“期望包络”
+3. 如果腔室对象有 voxel 落在 Myo 外 → 把这些 voxel 填入背景或 Myo 的内表面
+
+意义：
+• 避免 Stage 2 填洞导致 Myo 偶尔吃到一部分腔室
+• 保证 Myo 是一层壳
+
+________________________________________
+
+Rule 2：LA/LV/RA/RV 不应有非生理性“泄漏”
+
+做法（非常简单、非常有效）：
+对每个腔室：
+    keep_largest_component ( mask_chamber )
+
+但这里要做 基于 LA/LV “接近性” 的小 trick：
+如果第二大 CC 和主 CC 的中心距离 < 2～3 voxels
+→ 自动合并（用 dilate → intersect）
+
+这去掉绝大多数“漏到外面的尾巴状噪声”。
+
+________________________________________
+
+Rule 3：PV 必须接 LA（最重要）
+
+PV 在 Stage2 里只有 Top4，这不足以保证 4 根都连到 LA，所以 Stage 3 必须补这一刀。
+
+实现方式（务实，不需要 skeleton）：
+对每个 PV CC：
+1. 计算 PV- LA 的最小距离
+2. d = distance_transform_edt ( 1 - LA_mask )
+3. min_dist = d[ PV_voxels ].min ()
+4. 如果 min_dist > d_max （比如 5 voxel） → 判定为“无效 PV”，删掉整个 CC。
+5. 如果 1 <= min_dist <= 3 → 做一次 dilate 连接，并重新 assign class。
+
+会发现：
+• 无效 PV（出现在肺野、孤立的瓣叶）会消失
+• 有效 PV 会自动被 LA 吸附到边缘
+• 这一步会显著改善最终的 LA/PV 几何质量
+
+________________________________________
+
+Rule 4：LAA 必须接 LA
+
+Stage2 的 LAA 已经是单一 CC，但它可能离 LA 有 1–2 voxel 的裂隙。
+
+做法基本同 PV：
+if min_dist ( LAA, LA) > threshold:
+    delete or shrink LAA
+else:
+    connect LAA to LA using small dilation
+
+建议：阈值设 1–3 voxel
+避免 Stage2 closing 扩张不够的情况。
+
+________________________________________
+
+Rule 5：Coronary 必须靠近 Myo / Aorta（否则删）
+
+冠脉是最难的，但 Stage 3 可以很稳地做以下逻辑：
+
+对每个 CAs CC：
+1. 计算 voxel 到 Myo ∪ Aorta 的最近距离
+2. 如果整个 CC 都满足 distance > 6（比如）→ 这个 CC 是漂浮噪点，删除
+3. 如果只是一小段距离大→ 不删，保主树（不要 skeleton，避免坏情况）
+
+🎯 这一步非常关键，因为 Stage 2 无法用单类信息判断冠脉是否真实靠在心肌表面。
+
+________________________________________
+
+Rule 6：大血管（Ao/PA）不能穿透心肌
+
+简单逻辑：
+if ( mask_Aorta ∩ Myo ) != Ø:
+    remove penetrating part ( assign to Myo)
+
+或者更干净的：
+• 对 Myo 做 erode(1) 得到“内表面”
+• 对 Ao 填补外侧，但不允许侵入到 eroded 内壳
+
+________________________________________
+
+Rule 7：全局 sanity check（避免多类共享边界太大）
+
+最后环节：
+for each class i:
+    if number_of_voxels < V_min_threshold :
+        delete (set to background)
+
+推荐阈值：
+• 大结构：1000 voxel
+• 小结构（LAA/CAs/PV）：50 voxel
+
+________________________________________
+
+3️⃣ 最终要产出什么？
+
+一个文件：stage3.py
+负责：
+1. 加载 Stage2 的 10 类 .npy
+2. apply priority fusion
+3. apply all anatomy rules
+4. 输出 final segmentation（一个 11 类的 array）
+
+一个调参脚本：stage3_run_case.py
+• 输入：某个 case_id
+• 输出：三个 nii 文件
+    o Stage2 vs Stage3 差异
+    o 每条规则的可视化结果（能 pinpoint 哪步改动最大）
