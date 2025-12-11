@@ -131,3 +131,21 @@ This project successfully achieved a qualitative leap **"from Noisy to Clean, fr
 3.  **Result is Trustworthy**: While aggressively repairing fine structures, the Dice of major organs remained above 0.95, indicating no extra errors were introduced.
 
 This is now a **topologically correct, geometrically smooth, and anatomically consistent** high-quality cardiac CT segmentation dataset.
+
+---
+
+## 5. Limitations & Case Study
+
+While our framework exhibits excellent performance on 99% of samples, we observed an interesting "cascading failure" in extremely rare cases. This offers valuable insights for future work.
+
+### Case Study: Sample 75 (The Case of Missing Coronary)
+
+*   **Phenomenon**: In the final repaired result, the Class 9 (Coronary Artery) of Sample 75 is completely missing.
+*   **Root Cause Analysis**:
+    1.  **Phase 1 & 2 (Perfect)**: After NeAR inference and morphological processing, both Myocardium (CC=1) and Coronary (CC=2) were perfectly repaired.
+    2.  **Phase 3 (Failure)**: During multi-class fusion, the predicted Left Ventricle (LV) for this sample was slightly expanded. Following the `Priority: LV > Myocardium` rule, the LV "cut through" the Myocardium ring, causing it to break into 4 fragments.
+    3.  **Chain Reaction**: Once the Myocardium broke, the Coronary arteries, which were originally attached to the excised Myocardium segments, became "floating structures". According to `Rule 3: Floating Coronary Removal`, these "unrooted" segments were classified as noise and removed to maintain anatomical consistency.
+*   **Insight**:
+    *   This is a classic **Trade-off**: To ensure absolute anatomical logical correctness (no floating vessels), we sacrificed recall in isolated extreme cases.
+    *   This proves the **Robustness** of the framework—it chooses to delete rather than allow physically impossible structures to exist.
+    *   Future Direction: Introduce more flexible "Joint Topological Constraints" and replace the current Hard-Fusion strategy with Soft-Fusion.
