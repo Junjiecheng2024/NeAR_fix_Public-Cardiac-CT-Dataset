@@ -27,25 +27,21 @@ The project is implemented in three progressive phases:
 *   **Model Architecture**:
     *   **Shape-Only NeAR** (Appearance branch removed, focusing only on shape).
     *   **MLP Structure**:
-        *   `fc1`: input -> 256 (ReLU)
-        *   `fc2`: 256 -> 256 (ReLU)
-        *   `skip`: concat(hidden, input) -> 256+input
-        *   `fc3`: -> 128 (ReLU)
-        *   `fc4`: -> 64 (ReLU)
-        *   `output`: -> 1 (Logits)
-    *   **Loss Function**: `Loss = 70% Dice + 30% Focal (gamma=4.0) + L2 Penalty`.
+        *   `fc1`: input(163-dim) -> 256 (GroupNorm + LeakyReLU)
+        *   `fc2`: 256 -> 256 (GroupNorm + LeakyReLU)
+        *   `skip`: concat(hidden, input) -> 256+163
+        *   `fc3`: -> 128 (GroupNorm + LeakyReLU)
+        *   `fc4`: -> 64 (GroupNorm + LeakyReLU)
+        *   `output`: -> 1 (Logits, bias=-4.6)
+    *   **Loss Function**: `Loss = 80% Dice + 20% Focal (gamma=4.0) + L2 Penalty`.
 
 *   **Key Training Strategies**:
     1.  **Boundary Biased Sampling**:
-        *   Band Construction: `Band = Dilate(Mask, r=2) - Erode(Mask, r=2)`.
-        *   Sampling: 50% points from the boundary `Band` (hard samples), 50% uniform from the whole ROI (global samples).
+        *   Band Construction: `Band = Dilate(Mask, r=3)`.
+        *   Sampling: 20% points from the boundary `Band` (hard samples), 80% uniform from the whole ROI.
         *   **Effect**: Forces the model to focus on fine boundaries (like coronaries) and prevents small structures from vanishing.
-    2.  **Dynamic Scheduling**:
-        *   Epoch 1-100: 50% boundary bias.
-        *   Epoch 101-200: 30% boundary bias.
-        *   Epoch 201-300: 10% boundary bias.
-        *   **Effect**: Transitions the model from "memorizing boundaries" to "learning global shape distribution".
-    3.  **Overfitting Strategy**: No Early Stopping. We aim to "overfit" the model on all samples to obtain the most refined repair results.
+    2.  **Overfitting Strategy**: No Early Stopping. We aim to overfit the model on all samples to obtain the most refined repair results.
+    3.  **Cosine LR Schedule**: Using Cosine Annealing Schedule with optional warmup phase.
 
 *   **Output**: 256x256x256 probability maps for 10 classes, resolving most aliasing and noise.
 
@@ -55,13 +51,13 @@ The project is implemented in three progressive phases:
 *   **Core Script**: `perform_morphology_v2.py`
 *   **Tiered Strategy**:
     1.  **Large Organs (LV, RV, LA, RA, Myocardium)**:
-        *   **Action**: `Closing (Radius=3)` -> `Fill Holes` -> `Keep Largest 1 CC`.
+        *   **Action**: `Closing (Radius=2)` -> `Fill Holes` -> `Keep Largest 1-2 CC`.
         *   **Effect**: Removes floating noise, fills internal holes, ensures single connectivity.
     2.  **Tubular Structures (Coronary)**:
-        *   **Action**: `Closing (Radius=2)` -> `Keep Largest 2 CCs`.
-        *   **Effect**: Reconnects breaks (Closing), preserves Left/Right Coronary Mains (Top-2), removes fragmentation.
+        *   **Action**: `Closing (Radius=1)` -> Extra `Closing (r=1)` for breakpoints -> `Keep Largest 2 CCs`.
+        *   **Effect**: Reconnects breaks, preserves Left/Right Coronary Mains (Top-2), removes fragmentation.
     3.  **Multi-Source Structures (PV)**:
-        *   **Action**: `Keep Largest 4 CCs`.
+        *   **Action**: `Closing (Radius=1)` -> `Keep Largest 4 CCs`.
         *   **Effect**: Preserves 4 Pulmonary Veins.
 
 *   **Data Analysis**:
@@ -96,29 +92,29 @@ This is the greatest value of this project: repairing "broken" into "connected".
 
 | Metric | Original | **Repaired (Phase 3)** | Conclusion |
 | :--- | :--- | :--- | :--- |
-| **Coronary CC** | 2.12 (Severe Breaks) | **1.36** | 📉 **Significant Repair**, ~40% of breaks reconnected. |
-| **PV -> LA Connectivity** | 98.64% (Floating) | **100.00%** | 🌟 **Perfect**, repaired 1.36% floating veins. |
-| **LAA -> LA Connectivity** | 80.25% (Severe Floating) | **100.00%** | 🌟 **Perfect**, repaired ~20% floating LAA. |
-| **Coronary Attachment** | 94.28% | **98.60%** | ✅ Improved, better anatomical positioning. |
+| **Coronary CC** | 2.12 (Severe Breaks) | **1.36** | **Significant Repair**, ~40% of breaks reconnected. |
+| **PV -> LA Connectivity** | 98.64% (Floating) | **100.00%** | **Perfect**, repaired 1.36% floating veins. |
+| **LAA -> LA Connectivity** | 80.25% (Severe Floating) | **100.00%** | **Perfect**, repaired ~20% floating LAA. |
+| **Coronary Attachment** | 94.28% | **98.60%** | Improved, better anatomical positioning. |
 
 ### B. Geometric Smoothness —— **Evidence of Quality Improvement**
 Measured using **Isoperimetric Ratio** ($Ratio = Area / Volume^{2/3}$). Lower values indicate smoother shapes.
 
 | Class | Original Ratio | **Repaired Ratio** | Change | Evaluation |
 | :--- | :--- | :--- | :--- | :--- |
-| **Coronary** | 32.03 | **20.11** | **-37%** | 🌟 **Much Smoother**, removed jagged edges. |
-| **LAA** | 14.45 | **11.96** | **-17%** | ✅ Smoother. |
-| **PV** | 19.48 | **17.92** | **-8%** | ✅ Smoother. |
+| **Coronary** | 32.03 | **20.11** | **-37%** | **Much Smoother**, removed jagged edges. |
+| **LAA** | 14.45 | **11.96** | **-17%** | Smoother. |
+| **PV** | 19.48 | **17.92** | **-8%** | Smoother. |
 
 ### C. Anatomical Fidelity —— **Evidence of Robustness**
 Proves we preserved the correct large structures while repairing (No Hallucination).
 
 | Class | **Dice** | **HD95 (vox)** | **ASD (vox)** | Evaluation |
 | :--- | :--- | :--- | :--- | :--- |
-| **LV** | **0.981** | **1.28** | **0.40** | 🌟 **Sub-voxel accuracy**, perfectly preserved. |
-| **LA** | **0.972** | **1.55** | **0.57** | 🌟 Excellent. |
-| **Aorta** | **0.955** | **2.01** | **0.66** | ✅ Very good. |
-| **Coronary** | 0.432 | 130.68 | 24.85 | ⚠️ **Expected Deviation**. Original was broken, we fixed it, so Dice is naturally low. |
+| **LV** | **0.981** | **1.28** | **0.40** | **Sub-voxel accuracy**, perfectly preserved. |
+| **LA** | **0.972** | **1.55** | **0.57** | Excellent. |
+| **Aorta** | **0.955** | **2.01** | **0.66** | Very good. |
+| **Coronary** | 0.432 | 130.68 | 24.85 | **Expected Deviation**. Original was broken, we fixed it, so Dice is naturally low. |
 
 ---
 
