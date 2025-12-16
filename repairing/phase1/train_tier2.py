@@ -20,6 +20,10 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
 
+# WandB login for non-interactive sbatch jobs
+import wandb
+wandb.login(key="d6891a1bb4397a24519ef1b36091aa1b77ea67e1")
+
 from lightning_module_tier2 import CoronaryTier2LightningModule
 from near.datasets.coronary_tier2_dataset import CoronaryTier2Dataset
 from near.models.nn3d.grid import GatherGridsFromVolumes
