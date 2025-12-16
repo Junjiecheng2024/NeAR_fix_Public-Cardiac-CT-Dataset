@@ -1,0 +1,383 @@
+"""
+3D 可视化脚本 - 生成原始 vs Phase1 vs Phase3 的3D表面对比图
+使用 marching cubes 提取表面网格，用 matplotlib 渲染
+"""
+import os
+import numpy as np
+import nibabel as nib
+from pathlib import Path
+from skimage import measure
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import argparse
+
+# 类别定义
+CLASS_NAMES = {
+    1: "Myocardium", 2: "LA", 3: "LV", 4: "RA", 5: "RV",
+    6: "Aorta", 7: "PA", 8: "LAA", 9: "Coronary", 10: "PV"
+}
+
+# 颜色定义 (RGB, 0-1)
+CLASS_COLORS = {
+    1: (0.8, 0.2, 0.2),    # Myocardium - Red
+    2: (0.2, 0.8, 0.2),    # LA - Green
+    3: (0.2, 0.2, 0.8),    # LV - Blue
+    4: (0.9, 0.9, 0.2),    # RA - Yellow
+    5: (0.2, 0.9, 0.9),    # RV - Cyan
+    6: (0.9, 0.2, 0.9),    # Aorta - Magenta
+    7: (1.0, 0.5, 0.0),    # PA - Orange
+    8: (0.6, 0.0, 0.8),    # LAA - Purple
+    9: (0.8, 0.0, 0.0),    # Coronary - Dark Red
+    10: (0.0, 0.6, 0.6),   # PV - Teal
+}
+
+# Phase1/Phase2 输出目录映射
+PHASE1_CLASS_DIRS = {
+    8: "class8_LAA",
+    9: "class9_Coronary", 
+    10: "class10_PV",
+}
+
+def load_mask(path):
+    """加载mask文件"""
+    if path.endswith('.npy'):
+        return np.load(path)
+    elif path.endswith('.nii.gz') or path.endswith('.nii'):
+        return np.asanyarray(nib.load(path).dataobj)
+    return None
+
+def extract_surface(mask, class_id, step_size=2):
+    """
+    使用 marching cubes 提取表面网格
+    step_size: 降采样步长，越大越快但越粗糙
+    """
+    binary_mask = (mask == class_id).astype(np.float32)
+    if binary_mask.sum() == 0:
+        return None, None
+    
+    try:
+        # 降采样以加速
+        if step_size > 1:
+            binary_mask = binary_mask[::step_size, ::step_size, ::step_size]
+        
+        verts, faces, normals, values = measure.marching_cubes(binary_mask, level=0.5)
+        verts = verts * step_size  # 恢复原始尺度
+        return verts, faces
+    except:
+        return None, None
+
+def extract_surface_binary(binary_mask, step_size=2):
+    """
+    从二值mask提取表面（用于Phase1单类别输出）
+    """
+    binary_mask = (binary_mask > 0).astype(np.float32)
+    if binary_mask.sum() == 0:
+        return None, None
+    
+    try:
+        if step_size > 1:
+            binary_mask = binary_mask[::step_size, ::step_size, ::step_size]
+        
+        verts, faces, normals, values = measure.marching_cubes(binary_mask, level=0.5)
+        verts = verts * step_size
+        return verts, faces
+    except:
+        return None, None
+
+def plot_3d_comparison(orig_mask, phase3_mask, case_id, output_path, 
+                       classes_to_show=[8, 9, 10], alpha=0.7, phase1_masks=None):
+    """
+    生成3D对比图：Original -> Phase1 -> Phase3 (三列对比)
+    classes_to_show: 要显示的类别ID列表
+    phase1_masks: dict {class_id: mask} Phase1单类别mask
+    """
+    # 判断是两列还是三列
+    has_phase1 = phase1_masks is not None and len(phase1_masks) > 0
+    ncols = 3 if has_phase1 else 2
+    
+    fig = plt.figure(figsize=(8 * ncols, 8))
+    
+    # 原始数据
+    ax1 = fig.add_subplot(1, ncols, 1, projection='3d')
+    ax1.set_title(f'Original (Case {case_id})', fontsize=14)
+    
+    # Phase1数据 (如果有)
+    if has_phase1:
+        ax_p1 = fig.add_subplot(1, ncols, 2, projection='3d')
+        ax_p1.set_title(f'After NeAR (Phase1)', fontsize=14)
+        ax3 = fig.add_subplot(1, ncols, 3, projection='3d')
+    else:
+        ax_p1 = None
+        ax3 = fig.add_subplot(1, ncols, 2, projection='3d')
+    
+    ax3.set_title(f'Final Repaired (Phase3)', fontsize=14)
+    
+    # 存储边界用于统一视角
+    all_verts = []
+    
+    for class_id in classes_to_show:
+        color = CLASS_COLORS.get(class_id, (0.5, 0.5, 0.5))
+        name = CLASS_NAMES.get(class_id, f'Class{class_id}')
+        
+        # 原始数据
+        verts1, faces1 = extract_surface(orig_mask, class_id)
+        if verts1 is not None:
+            mesh1 = Poly3DCollection(verts1[faces1], alpha=alpha)
+            mesh1.set_facecolor(color)
+            mesh1.set_edgecolor('none')
+            ax1.add_collection3d(mesh1)
+            all_verts.append(verts1)
+        
+        # Phase1数据 (单类别mask，直接是二值的)
+        if has_phase1 and class_id in phase1_masks and phase1_masks[class_id] is not None:
+            p1_mask = phase1_masks[class_id]
+            # Phase1是单类别二值mask，非0即为该类
+            verts_p1, faces_p1 = extract_surface_binary(p1_mask)
+            if verts_p1 is not None:
+                mesh_p1 = Poly3DCollection(verts_p1[faces_p1], alpha=alpha)
+                mesh_p1.set_facecolor(color)
+                mesh_p1.set_edgecolor('none')
+                ax_p1.add_collection3d(mesh_p1)
+                all_verts.append(verts_p1)
+        
+        # Phase3数据 (最终融合结果)
+        verts3, faces3 = extract_surface(phase3_mask, class_id)
+        if verts3 is not None:
+            mesh3 = Poly3DCollection(verts3[faces3], alpha=alpha)
+            mesh3.set_facecolor(color)
+            mesh3.set_edgecolor('none')
+            ax3.add_collection3d(mesh3)
+            all_verts.append(verts3)
+    
+    # 统一坐标范围
+    axes_list = [ax1, ax3] if not has_phase1 else [ax1, ax_p1, ax3]
+    if all_verts:
+        all_verts = np.vstack(all_verts)
+        max_range = np.array([all_verts[:, 0].max() - all_verts[:, 0].min(),
+                              all_verts[:, 1].max() - all_verts[:, 1].min(),
+                              all_verts[:, 2].max() - all_verts[:, 2].min()]).max() / 2.0
+        mid_x = (all_verts[:, 0].max() + all_verts[:, 0].min()) * 0.5
+        mid_y = (all_verts[:, 1].max() + all_verts[:, 1].min()) * 0.5
+        mid_z = (all_verts[:, 2].max() + all_verts[:, 2].min()) * 0.5
+        
+        for ax in axes_list:
+            ax.set_xlim(mid_x - max_range, mid_x + max_range)
+            ax.set_ylim(mid_y - max_range, mid_y + max_range)
+            ax.set_zlim(mid_z - max_range, mid_z + max_range)
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_zlabel('Z')
+    
+    # 添加图例
+    legend_patches = [plt.Rectangle((0, 0), 1, 1, fc=CLASS_COLORS[c]) 
+                      for c in classes_to_show if c in CLASS_COLORS]
+    legend_labels = [CLASS_NAMES[c] for c in classes_to_show if c in CLASS_NAMES]
+    fig.legend(legend_patches, legend_labels, loc='lower center', ncol=len(classes_to_show))
+    
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"Saved: {output_path}")
+
+def plot_single_class_comparison(orig_mask, phase3_mask, case_id, class_id, output_path, phase1_mask=None):
+    """
+    单个类别的详细3D对比（3列：Original -> Phase1 -> Phase3）
+    phase1_mask: 单类别的Phase1 NeAR输出（二值mask）
+    """
+    has_phase1 = phase1_mask is not None
+    ncols = 3 if has_phase1 else 2
+    
+    fig = plt.figure(figsize=(7 * ncols, 6))
+    
+    class_name = CLASS_NAMES.get(class_id, f'Class{class_id}')
+    color = CLASS_COLORS.get(class_id, (0.5, 0.5, 0.5))
+    edge_color = (0.8, 0.1, 0.1, 0.15)  # 红色边框
+    
+    # 原始
+    ax1 = fig.add_subplot(1, ncols, 1, projection='3d')
+    ax1.set_title(f'Original {class_name}', fontsize=14)
+    
+    # Phase1 (如果有)
+    if has_phase1:
+        ax_p1 = fig.add_subplot(1, ncols, 2, projection='3d')
+        ax_p1.set_title(f'After NeAR (Phase1)', fontsize=14)
+        ax2 = fig.add_subplot(1, ncols, 3, projection='3d')
+    else:
+        ax_p1 = None
+        ax2 = fig.add_subplot(1, ncols, 2, projection='3d')
+    
+    ax2.set_title(f'Final Repaired (Phase3)', fontsize=14)
+    
+    all_verts = []
+    
+    # 原始
+    verts1, faces1 = extract_surface(orig_mask, class_id, step_size=1)
+    if verts1 is not None:
+        mesh1 = Poly3DCollection(verts1[faces1], alpha=0.8)
+        mesh1.set_facecolor(color)
+        mesh1.set_edgecolor(edge_color)
+        ax1.add_collection3d(mesh1)
+        all_verts.append(verts1)
+    else:
+        ax1.text(0.5, 0.5, 0.5, 'Empty', ha='center', transform=ax1.transAxes)
+    
+    # Phase1 (单类别二值mask)
+    if has_phase1:
+        verts_p1, faces_p1 = extract_surface_binary(phase1_mask, step_size=1)
+        if verts_p1 is not None:
+            mesh_p1 = Poly3DCollection(verts_p1[faces_p1], alpha=0.8)
+            mesh_p1.set_facecolor(color)
+            mesh_p1.set_edgecolor(edge_color)
+            ax_p1.add_collection3d(mesh_p1)
+            all_verts.append(verts_p1)
+        else:
+            ax_p1.text(0.5, 0.5, 0.5, 'Empty', ha='center', transform=ax_p1.transAxes)
+    
+    # Phase3 修复后
+    verts2, faces2 = extract_surface(phase3_mask, class_id, step_size=1)
+    if verts2 is not None:
+        mesh2 = Poly3DCollection(verts2[faces2], alpha=0.8)
+        mesh2.set_facecolor(color)
+        mesh2.set_edgecolor(edge_color)
+        ax2.add_collection3d(mesh2)
+        all_verts.append(verts2)
+    else:
+        ax2.text(0.5, 0.5, 0.5, 'Empty', ha='center', transform=ax2.transAxes)
+    
+    # 统一坐标
+    axes_list = [ax1, ax2] if not has_phase1 else [ax1, ax_p1, ax2]
+    if all_verts:
+        all_verts = np.vstack(all_verts)
+        max_range = np.array([all_verts[:, 0].max() - all_verts[:, 0].min(),
+                              all_verts[:, 1].max() - all_verts[:, 1].min(),
+                              all_verts[:, 2].max() - all_verts[:, 2].min()]).max() / 2.0
+        mid_x = (all_verts[:, 0].max() + all_verts[:, 0].min()) * 0.5
+        mid_y = (all_verts[:, 1].max() + all_verts[:, 1].min()) * 0.5
+        mid_z = (all_verts[:, 2].max() + all_verts[:, 2].min()) * 0.5
+        
+        for ax in axes_list:
+            ax.set_xlim(mid_x - max_range, mid_x + max_range)
+            ax.set_ylim(mid_y - max_range, mid_y + max_range)
+            ax.set_zlim(mid_z - max_range, mid_z + max_range)
+    
+    plt.suptitle(f'Case {case_id} - {class_name} Comparison', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=200, bbox_inches='tight')
+    plt.close()
+    print(f"Saved: {output_path}")
+
+def main():
+    parser = argparse.ArgumentParser(description='3D Visualization of Repair Results')
+    parser.add_argument('--case_ids', type=str, default='24,327,75,655,229,637,201',
+                        help='Comma-separated case IDs to visualize, e.g., "24,327,75"')
+    parser.add_argument('--orig_dir', type=str, 
+                        default='/scratch/project_2016517/junjie/dataset/near_format_data/shape',
+                        help='Directory containing original segmentation masks (256 format)')
+    parser.add_argument('--phase1_dir', type=str,
+                        default='/projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/phase2',
+                        help='Directory containing phase1/2 class outputs')
+    parser.add_argument('--phase3_dir', type=str, 
+                        default='/scratch/project_2016517/junjie/dataset/repaired_shape',
+                        help='Directory containing phase3 output masks')
+    parser.add_argument('--output_dir', type=str, default='./vis_3d',
+                        help='Output directory for visualizations')
+    parser.add_argument('--classes', type=str, default='8,9,10',
+                        help='Classes for overview comparison (default: LAA, Coronary, PV)')
+    parser.add_argument('--single_classes', type=str, default='1,2,3,4,5,6,7,8,9,10',
+                        help='Classes for single-class comparison (default: all 10 classes)')
+    args = parser.parse_args()
+    
+    os.makedirs(args.output_dir, exist_ok=True)
+    
+    case_ids = [int(x.strip()) for x in args.case_ids.split(',')]
+    classes = [int(x.strip()) for x in args.classes.split(',')]  # 总图用的类
+    single_classes = [int(x.strip()) for x in args.single_classes.split(',')]  # 单类图用的类
+    
+    orig_dir = Path(args.orig_dir)
+    phase1_dir = Path(args.phase1_dir)
+    phase3_dir = Path(args.phase3_dir)
+    
+    print(f"Generating 3D visualizations for cases: {case_ids}")
+    print(f"Classes to show: {[CLASS_NAMES.get(c, c) for c in classes]}")
+    print(f"Original dir: {orig_dir}")
+    print(f"Phase1 dir: {phase1_dir}")
+    print(f"Phase3 dir: {phase3_dir}")
+    
+    for case_id in case_ids:
+        print(f"\nProcessing Case {case_id}...")
+        
+        # 原始分割路径 - near_format_data是.npy格式
+        orig_paths = [
+            orig_dir / f"{case_id}.npy",
+            orig_dir / f"{case_id}_label.npy",
+            orig_dir / f"{case_id}.nii.gz",
+        ]
+        # Phase3输出路径 - 文件名格式: 24.nii.img.nii.gz
+        phase3_paths = [
+            phase3_dir / f"{case_id}.nii.img.nii.gz",
+            phase3_dir / f"{case_id}.nii.gz",
+            phase3_dir / f"{case_id}.npy",
+        ]
+        
+        orig_mask = None
+        phase3_mask = None
+        
+        for p in orig_paths:
+            if p.exists():
+                orig_mask = load_mask(str(p))
+                print(f"  Loaded original: {p}")
+                break
+        
+        for p in phase3_paths:
+            if p.exists():
+                phase3_mask = load_mask(str(p))
+                print(f"  Loaded phase3: {p}")
+                break
+        
+        if orig_mask is None:
+            print(f"  Warning: Original mask not found for case {case_id}")
+            continue
+        if phase3_mask is None:
+            print(f"  Warning: Phase3 mask not found for case {case_id}")
+            continue
+        
+        # 加载Phase1单类别输出 (为所有单类图加载)
+        phase1_masks = {}
+        all_class_ids = list(set(classes + single_classes))  # 合并需要加载的类
+        for class_id in all_class_ids:
+            class_name = CLASS_NAMES.get(class_id, f'Class{class_id}')
+            class_dir_name = f"class{class_id}_{class_name}"
+            
+            # 尝试多种路径 - Phase1 NeAR 直接输出
+            p1_paths = [
+                phase1_dir / class_dir_name / f"{class_dir_name}_results_256" / f"{case_id}.npy",
+                phase1_dir / class_dir_name / f"{class_dir_name}_results_256" / f"{case_id}_refined.npy",
+                # Phase2 形态学处理后
+                phase1_dir / class_dir_name / f"{class_dir_name}_results_256_processed" / f"{case_id}_refined.npy",
+            ]
+            
+            for p in p1_paths:
+                if p.exists():
+                    phase1_masks[class_id] = load_mask(str(p))
+                    print(f"  Loaded Phase1 {class_name}: {p.name}")
+                    break
+        
+        # 生成三列对比图 (Original -> Phase1 -> Phase3)
+        output_path = os.path.join(args.output_dir, f"case_{case_id}_3d_comparison.png")
+        plot_3d_comparison(orig_mask, phase3_mask, case_id, output_path, classes, 
+                          phase1_masks=phase1_masks if phase1_masks else None)
+        
+        # 为每个类别生成单独的详细对比图（包括Phase1中间结果）
+        for class_id in single_classes:
+            class_name = CLASS_NAMES.get(class_id, f'Class{class_id}')
+            output_path = os.path.join(args.output_dir, 
+                                       f"case_{case_id}_{class_name}_3d.png")
+            # 获取该类别的Phase1 mask（如果有的话）
+            p1_mask = phase1_masks.get(class_id, None) if phase1_masks else None
+            plot_single_class_comparison(orig_mask, phase3_mask, case_id, class_id, 
+                                        output_path, phase1_mask=p1_mask)
+    
+    print(f"\nDone! Visualizations saved to {args.output_dir}")
+
+if __name__ == "__main__":
+    main()
