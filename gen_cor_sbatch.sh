@@ -47,7 +47,7 @@ python prepare_coronary_tier2.py \
     --images_dir ${ORIGINAL_IMAGES} \
     --labels_dir ${ORIGINAL_LABELS} \
     --output_dir ${TIER2_DATA} \
-    --margin 20 \
+    --margin 5 \
     --target_resolution 256 \
     --n_workers 20
 
