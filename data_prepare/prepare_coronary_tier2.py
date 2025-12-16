@@ -172,9 +172,10 @@ def process_single_case(args) -> Dict:
             return {"case_id": case_id, "status": "no_coronary", 
                     "error": f"Only {coronary_voxels} coronary voxels"}
         
-        # Compute combined bbox (Coronary + Myocardium + Aorta)
-        all_classes = [CORONARY_TARGET_CLASS] + CORONARY_CONTEXT_CLASSES
-        bbox = compute_class_bbox(seg_data, all_classes, margin=config["margin"])
+        # ===== CHANGED: Compute bbox based on CORONARY ONLY =====
+        # This gives much higher voxel ratio (~5-10% vs 0.2%)
+        # Context mask is still saved for spatial guidance
+        bbox = compute_class_bbox(seg_data, [CORONARY_TARGET_CLASS], margin=config["margin"])
         
         if bbox is None:
             return {"case_id": case_id, "status": "empty_bbox", "error": "No foreground found"}
@@ -207,6 +208,8 @@ def process_single_case(args) -> Dict:
         mask_coronary = (seg_cropped == CORONARY_TARGET_CLASS).astype(np.uint8)
         mask_myo = (seg_cropped == CLASS_IDS["Myocardium"]).astype(np.uint8)
         mask_aorta = (seg_cropped == CLASS_IDS["Aorta"]).astype(np.uint8)
+        # Context mask: parts of Myo/Aorta that fall within the coronary bbox
+        # This provides spatial guidance even when cropping around coronary only
         mask_context = ((mask_myo > 0) | (mask_aorta > 0)).astype(np.uint8)
         
         # Create output directory for this case
