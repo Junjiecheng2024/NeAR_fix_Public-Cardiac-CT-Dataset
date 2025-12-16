@@ -85,15 +85,15 @@ def visualize_slices(data, slice_idx=None, save_path=None):
         z = max(0, min(z, d-1))
         ax = axes[0, i]
         ax.imshow(ct[z], cmap='gray', vmin=0, vmax=1)
-        if mask is not None:
-            ax.contour(mask[z], levels=[0.5], colors='red', linewidths=1)
         if context is not None:
-            ax.contour(context[z], levels=[0.5], colors='blue', linewidths=0.5, alpha=0.5)
+            ax.contour(context[z], levels=[0.5], colors='cyan', linewidths=1.5)
+        if mask is not None:
+            ax.contour(mask[z], levels=[0.5], colors='red', linewidths=1.5)
         ax.set_title(f"Axial z={z}")
         ax.axis('off')
     
     # Legend
-    axes[0, 3].text(0.1, 0.5, "Red: Coronary\nBlue: Context (Myo+Aorta)", 
+    axes[0, 3].text(0.1, 0.5, "Red: Coronary\nCyan: Context (Myo+Aorta)", 
                      fontsize=12, transform=axes[0, 3].transAxes)
     axes[0, 3].axis('off')
     
@@ -101,10 +101,10 @@ def visualize_slices(data, slice_idx=None, save_path=None):
     for i, y in enumerate([h//4, h//2, 3*h//4]):
         ax = axes[1, i]
         ax.imshow(ct[:, y, :], cmap='gray', vmin=0, vmax=1, aspect='auto')
-        if mask is not None:
-            ax.contour(mask[:, y, :], levels=[0.5], colors='red', linewidths=1)
         if context is not None:
-            ax.contour(context[:, y, :], levels=[0.5], colors='blue', linewidths=0.5, alpha=0.5)
+            ax.contour(context[:, y, :], levels=[0.5], colors='cyan', linewidths=1.5)
+        if mask is not None:
+            ax.contour(mask[:, y, :], levels=[0.5], colors='red', linewidths=1.5)
         ax.set_title(f"Coronal y={y}")
         ax.axis('off')
     
@@ -121,10 +121,10 @@ def visualize_slices(data, slice_idx=None, save_path=None):
     for i, x in enumerate([w//4, w//2, 3*w//4]):
         ax = axes[2, i]
         ax.imshow(ct[:, :, x], cmap='gray', vmin=0, vmax=1, aspect='auto')
-        if mask is not None:
-            ax.contour(mask[:, :, x], levels=[0.5], colors='red', linewidths=1)
         if context is not None:
-            ax.contour(context[:, :, x], levels=[0.5], colors='blue', linewidths=0.5, alpha=0.5)
+            ax.contour(context[:, :, x], levels=[0.5], colors='cyan', linewidths=1.5)
+        if mask is not None:
+            ax.contour(mask[:, :, x], levels=[0.5], colors='red', linewidths=1.5)
         ax.set_title(f"Sagittal x={x}")
         ax.axis('off')
     
