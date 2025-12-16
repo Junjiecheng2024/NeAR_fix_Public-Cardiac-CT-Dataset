@@ -152,8 +152,8 @@ def process_single_case(args) -> Dict:
     
     try:
         # Construct file paths
-        img_path = Path(config["images_dir"]) / f"{case_id}.nii.gz"
-        seg_path = Path(config["labels_dir"]) / f"{case_id}.nii.gz"
+        img_path = Path(config["images_dir"]) / f"{case_id}.nii.img.nii.gz"
+        seg_path = Path(config["labels_dir"]) / f"{case_id}.nii.img.nii.gz"
         
         # Check file existence
         if not img_path.exists():
