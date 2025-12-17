@@ -36,5 +36,5 @@ cd ${PROJECT_ROOT}/repairing/phase1
 python train_tier2.py \
     --config configs/coronary_tier2_fusion.py \
     --devices 4 \
-    --strategy ddp
+    --strategy ddp_spawn
 
