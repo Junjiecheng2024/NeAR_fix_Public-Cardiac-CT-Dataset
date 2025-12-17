@@ -29,10 +29,9 @@ export PYTORCH_ALLOC_CONF=expandable_segments:True
 export MASTER_ADDR=$(scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1)
 export MASTER_PORT=29500
 
-# Run training with srun (SLURM native, Lightning auto-detects)
+# Run training with srun (SLURM native)
+# Note: devices/strategy handled inside train_tier2.py based on SLURM env vars
 cd ${PROJECT_ROOT}/repairing/phase1
 
 srun --gpu-bind=closest python train_tier2.py \
-    --config configs/coronary_tier2_fusion.py \
-    --devices auto \
-    --strategy auto
+    --config configs/coronary_tier2_fusion.py

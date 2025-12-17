@@ -212,15 +212,17 @@ def main(args):
     # Trainer
     precision = '16-mixed' if cfg.get('use_amp', True) else 32
     
-    # When using srun with SLURM, Lightning auto-detects and configures DDP
-    # Just pass the configuration from command line
+    # Explicitly bind to the GPU corresponding to the local rank
+    # This fixes the issue where Lightning/SLURM might default all processes to GPU 0
+    device_id = [local_rank]
+    
     trainer = Trainer(
         logger=wandb_logger if global_rank == 0 else None,
         callbacks=[ckpt_cb, lr_monitor],
         max_epochs=cfg['n_epochs'],
-        accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-        devices=args.devices,
-        strategy=args.strategy if args.strategy else 'auto',
+        accelerator='gpu',
+        devices=device_id,  # [0], [1], [2], or [3] based on local rank
+        strategy='ddp',     # Force DDP strategy
         precision=precision,
         accumulate_grad_batches=cfg.get('gradient_accumulation_steps', 1),
         check_val_every_n_epoch=cfg.get('eval_interval', 5),
