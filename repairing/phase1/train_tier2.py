@@ -20,17 +20,17 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
 
-# Handle torchrun: set CUDA device based on LOCAL_RANK
-local_rank = int(os.environ.get('LOCAL_RANK', 0))
-world_size = int(os.environ.get('WORLD_SIZE', 1))
+# Handle distributed training: detect rank from SLURM or torchrun
+local_rank = int(os.environ.get('SLURM_LOCALID', os.environ.get('LOCAL_RANK', 0)))
+global_rank = int(os.environ.get('SLURM_PROCID', os.environ.get('RANK', 0)))
+world_size = int(os.environ.get('SLURM_NTASKS', os.environ.get('WORLD_SIZE', 1)))
+
 if world_size > 1:
-    # When using torchrun, each process should only see its own GPU
-    torch.cuda.set_device(local_rank)
-    print(f"[Rank {local_rank}/{world_size}] Using GPU {local_rank}")
+    print(f"[Rank {global_rank}/{world_size}, LocalRank {local_rank}] Distributed training detected")
 
 # WandB login for non-interactive sbatch jobs (only on rank 0)
 import wandb
-if local_rank == 0:
+if global_rank == 0:
     wandb.login(key="d6891a1bb4397a24519ef1b36091aa1b77ea67e1")
 
 from lightning_module_tier2 import CoronaryTier2LightningModule
@@ -212,39 +212,21 @@ def main(args):
     # Trainer
     precision = '16-mixed' if cfg.get('use_amp', True) else 32
     
-    # Detect if running with torchrun (distributed)
-    is_distributed = int(os.environ.get('WORLD_SIZE', 1)) > 1
-    
-    if is_distributed:
-        # When using torchrun, use ddp strategy with device=[local_rank]
-        trainer = Trainer(
-            logger=wandb_logger if local_rank == 0 else None,
-            callbacks=[ckpt_cb, lr_monitor],
-            max_epochs=cfg['n_epochs'],
-            accelerator='gpu',
-            devices=[local_rank],  # Each process uses its own GPU
-            strategy='ddp',
-            precision=precision,
-            accumulate_grad_batches=cfg.get('gradient_accumulation_steps', 1),
-            check_val_every_n_epoch=cfg.get('eval_interval', 5),
-            log_every_n_steps=50,
-            deterministic=False,
-        )
-    else:
-        # Single GPU or no torchrun
-        trainer = Trainer(
-            logger=wandb_logger,
-            callbacks=[ckpt_cb, lr_monitor],
-            max_epochs=cfg['n_epochs'],
-            accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-            devices=args.devices,
-            strategy=args.strategy if args.strategy else 'auto',
-            precision=precision,
-            accumulate_grad_batches=cfg.get('gradient_accumulation_steps', 1),
-            check_val_every_n_epoch=cfg.get('eval_interval', 5),
-            log_every_n_steps=50,
-            deterministic=False,
-        )
+    # When using srun with SLURM, Lightning auto-detects and configures DDP
+    # Just pass the configuration from command line
+    trainer = Trainer(
+        logger=wandb_logger if global_rank == 0 else None,
+        callbacks=[ckpt_cb, lr_monitor],
+        max_epochs=cfg['n_epochs'],
+        accelerator='gpu' if torch.cuda.is_available() else 'cpu',
+        devices=args.devices,
+        strategy=args.strategy if args.strategy else 'auto',
+        precision=precision,
+        accumulate_grad_batches=cfg.get('gradient_accumulation_steps', 1),
+        check_val_every_n_epoch=cfg.get('eval_interval', 5),
+        log_every_n_steps=50,
+        deterministic=False,
+    )
     
     # Train
     trainer.fit(

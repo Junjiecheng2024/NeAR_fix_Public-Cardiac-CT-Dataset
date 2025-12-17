@@ -5,7 +5,7 @@
 #SBATCH --ntasks-per-node=4
 #SBATCH -p gpumedium
 #SBATCH --gres=gpu:a100:4
-#SBATCH --cpus-per-task=32
+#SBATCH --cpus-per-task=8
 #SBATCH --time=36:00:00
 #SBATCH --output=logs/%j.out
 #SBATCH --error=logs/%j.err
@@ -25,10 +25,14 @@ mkdir -p logs
 
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 
-# Run training with torchrun for multi-GPU (like VecsetX)
+# Set up distributed training environment for SLURM
+export MASTER_ADDR=$(scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1)
+export MASTER_PORT=29500
+
+# Run training with srun (SLURM native, Lightning auto-detects)
 cd ${PROJECT_ROOT}/repairing/phase1
 
-torchrun --nproc_per_node=4 --master_port=29500 train_tier2.py \
+srun --gpu-bind=closest python train_tier2.py \
     --config configs/coronary_tier2_fusion.py \
-    --devices 1 \
+    --devices auto \
     --strategy auto
