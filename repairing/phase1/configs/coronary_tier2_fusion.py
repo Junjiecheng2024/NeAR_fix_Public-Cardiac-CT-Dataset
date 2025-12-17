@@ -35,8 +35,8 @@ cfg['latent_dimension'] = 256
 # ==============================================================================
 # Data parameters
 # ==============================================================================
-cfg["target_resolution"] = None          # None = keep original crop size
-cfg["n_training_samples"] = None         # None = use all samples
+cfg["target_resolution"] = 128            # CHANGED: 256 causes OOM, use 128
+cfg["n_training_samples"] = None          # None = use all samples
 
 # ==============================================================================
 # Training parameters
