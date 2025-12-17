@@ -212,22 +212,25 @@ def main(args):
     # Trainer
     precision = '16-mixed' if cfg.get('use_amp', True) else 32
     
-    # Explicitly bind to the GPU corresponding to the local rank
-    # This fixes the issue where Lightning/SLURM might default all processes to GPU 0
-    device_id = [local_rank]
+    # Correct Lightning + SLURM (srun) configuration:
+    # 1. devices=4 (matches ntasks-per-node=4)
+    # 2. strategy='ddp' 
+    # 3. Lightning automatically maps rank to GPU
     
     trainer = Trainer(
         logger=wandb_logger if global_rank == 0 else None,
         callbacks=[ckpt_cb, lr_monitor],
         max_epochs=cfg['n_epochs'],
         accelerator='gpu',
-        devices=device_id,  # [0], [1], [2], or [3] based on local rank
-        strategy='ddp',     # Force DDP strategy
+        devices=world_size if world_size > 1 else 1, # Should match SLURM ntasks
+        num_nodes=1,
+        strategy='ddp',
         precision=precision,
         accumulate_grad_batches=cfg.get('gradient_accumulation_steps', 1),
         check_val_every_n_epoch=cfg.get('eval_interval', 5),
         log_every_n_steps=50,
         deterministic=False,
+        use_distributed_sampler=False, # We use custom sampler or will add DistributedSampler manually
     )
     
     # Train
