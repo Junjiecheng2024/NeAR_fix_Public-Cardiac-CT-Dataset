@@ -240,12 +240,18 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="NeAR v2.0 Tier2 Training")
-    parser.add_argument('--devices', type=int, default=1, 
-                        help='Number of GPUs to use')
+    parser.add_argument('--devices', type=str, default='1', 
+                        help='Number of GPUs or "auto"')
     parser.add_argument('--strategy', type=str, default=None, 
                         help='DDP strategy (e.g., ddp)')
     parser.add_argument('--config', type=str, required=True, 
                         help='Path to config file')
     args = parser.parse_args()
+    
+    # Parse devices: can be int or "auto"
+    if args.devices == 'auto':
+        args.devices = 'auto'
+    else:
+        args.devices = int(args.devices)
     
     main(args)
