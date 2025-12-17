@@ -11,8 +11,8 @@
 #SBATCH --error=logs/%j.err
 
 # Load necessary modules
-module load python-data/3.12-25.09
-source /scratch/project_2016517/junjie/junjiecheng/bin/activate
+module load python-data/3.10-24.04
+source /scratch/project_2016517/junjie/junjieenv/bin/activate
 
 # Define project root
 PROJECT_ROOT="/projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset"
