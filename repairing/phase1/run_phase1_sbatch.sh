@@ -2,7 +2,7 @@
 #SBATCH -A project_2016526
 #SBATCH --job-name=near_tier2_fusion
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
+#SBATCH --ntasks-per-node=4
 #SBATCH -p gpumedium
 #SBATCH --gres=gpu:a100:4
 #SBATCH --cpus-per-task=32
@@ -25,16 +25,10 @@ mkdir -p logs
 
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 
-# Set distributed training environment
-export MASTER_ADDR=localhost
-export MASTER_PORT=29500
-
-# Run training with Fusion model
-# Note: ntasks=1, Lightning handles multi-GPU internally via --devices
+# Run training with torchrun for multi-GPU (like VecsetX)
 cd ${PROJECT_ROOT}/repairing/phase1
 
-python train_tier2.py \
+torchrun --nproc_per_node=4 --master_port=29500 train_tier2.py \
     --config configs/coronary_tier2_fusion.py \
-    --devices 4 \
-    --strategy ddp_spawn
-
+    --devices 1 \
+    --strategy auto
