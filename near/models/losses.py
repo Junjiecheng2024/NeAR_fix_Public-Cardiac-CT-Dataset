@@ -116,3 +116,71 @@ class EikonalLoss3d(nn.Module):
 
 def implicit_sdf_loss(y_pred, y_true):
     return ((1-2*y_true)*y_pred).relu().mean()
+
+
+class FocalLoss(nn.Module):
+    """
+    Focal Loss for addressing class imbalance in binary segmentation.
+    
+    Args:
+        alpha: Weighting factor for positive class (default: 0.25)
+        gamma: Focusing parameter (default: 4.0)
+        reduction: 'mean', 'sum', or 'none'
+    """
+    def __init__(self, alpha=0.25, gamma=4.0, reduction='mean'):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.reduction = reduction
+    
+    def forward(self, inputs, targets):
+        BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
+        pt = torch.exp(-BCE_loss)
+        F_loss = self.alpha * (1 - pt) ** self.gamma * BCE_loss
+        
+        if self.reduction == 'mean':
+            return F_loss.mean()
+        elif self.reduction == 'sum':
+            return F_loss.sum()
+        else:
+            return F_loss
+
+
+class BoundaryDiceLoss(nn.Module):
+    """
+    Dice loss computed only on boundary region.
+    Helps model focus on fine boundary details.
+    
+    Args:
+        boundary_width: Width of boundary region in voxels (default: 2)
+        smooth: Smoothing factor to avoid division by zero (default: 1e-5)
+    """
+    def __init__(self, boundary_width=2, smooth=1e-5):
+        super().__init__()
+        self.boundary_width = boundary_width
+        self.smooth = smooth
+    
+    def forward(self, pred_prob, target):
+        """
+        Args:
+            pred_prob: predicted probability (B, 1, D, H, W)
+            target: ground truth binary mask (B, 1, D, H, W)
+        """
+        # Compute boundary mask via dilation - erosion
+        # Use max_pool for dilation, -max_pool(-x) for erosion
+        kernel_size = 2 * self.boundary_width + 1
+        padding = self.boundary_width
+        
+        dilated = F.max_pool3d(target, kernel_size, stride=1, padding=padding)
+        eroded = -F.max_pool3d(-target, kernel_size, stride=1, padding=padding)
+        boundary = (dilated - eroded).clamp(0, 1)
+        
+        # Compute Dice on boundary region only
+        pred_boundary = pred_prob * boundary
+        target_boundary = target * boundary
+        
+        intersection = (pred_boundary * target_boundary).sum()
+        union = pred_boundary.sum() + target_boundary.sum()
+        
+        dice = (2 * intersection + self.smooth) / (union + self.smooth)
+        return 1 - dice

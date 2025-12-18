@@ -58,13 +58,13 @@ echo "=============================================="
 cd ${PROJECT_ROOT}/repairing/phase1
 
 # Single GPU training
-python train_tier2.py \
-    --config configs/coronary_tier2.py \
+python train.py \
+    --config config.py \
     --devices 1
 
 # For multi-GPU training, use:
-# python train_tier2.py \
-#     --config configs/coronary_tier2.py \
+# python train.py \
+#     --config config.py \
 #     --devices 4 \
 #     --strategy ddp
 
@@ -80,8 +80,8 @@ echo "=============================================="
 # Find the latest checkpoint
 LATEST_CKPT=$(ls -td ${CHECKPOINT_DIR}/Coronary_Tier2_v2_* | head -1)/best.ckpt
 
-python inference_tier2.py \
-    --config configs/coronary_tier2.py \
+python inference.py \
+    --config config.py \
     --checkpoint ${LATEST_CKPT} \
     --output_dir ${TIER2_DATA}/predictions \
     --chunk_size 128
