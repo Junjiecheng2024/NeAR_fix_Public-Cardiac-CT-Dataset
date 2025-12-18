@@ -2,7 +2,7 @@
 repairing/near_repairing/stage1_coronary/inference_results/
 repairing/near_repairing/stage1_coronary/checkpoints/*/training_loss.json
 *.pth
-# *.ckpt
+*.ckpt
 
 # Logs (optional: comment out if you want to include small logs)
 *.log
@@ -60,5 +60,6 @@ wandb/
 *.npy
 *.nii
 *.png
+*.csv
 
 
