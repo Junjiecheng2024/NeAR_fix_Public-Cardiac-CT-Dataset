@@ -55,7 +55,7 @@ class CoronaryTier2LightningModule(pl.LightningModule):
         # Loss functions - optimized for small structures
         self.focal_loss_fn = FocalLoss(alpha=0.25, gamma=4.0)
         self.boundary_dice_fn = BoundaryDiceLoss(boundary_width=2)
-        self.tversky_loss_fn = TverskyLoss(alpha=0.7, beta=0.3)  # Emphasize recall
+        self.tversky_loss_fn = TverskyLoss(alpha=0.2, beta=0.8)  # Strongly emphasize recall
         self.topk_loss_fn = TopKLoss(k=0.1)  # Focus on hardest 10% voxels
         
         # Loss weights - rebalanced for coronary

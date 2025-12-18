@@ -194,14 +194,14 @@ class TverskyLoss(nn.Module):
     - alpha > beta: emphasizes recall (reduces false negatives / missed detections)
     - alpha < beta: emphasizes precision (reduces false positives)
     
-    For small structures like coronary: use alpha=0.7, beta=0.3 to prioritize recall.
+    For small structures like coronary: use alpha=0.2, beta=0.8 to strongly prioritize recall.
     
     Args:
-        alpha: weight for false positives (default: 0.7)
-        beta: weight for false negatives (default: 0.3)
+        alpha: weight for false positives (default: 0.2)
+        beta: weight for false negatives (default: 0.8)
         smooth: smoothing factor (default: 1e-5)
     """
-    def __init__(self, alpha=0.7, beta=0.3, smooth=1e-5):
+    def __init__(self, alpha=0.2, beta=0.8, smooth=1e-5):
         super().__init__()
         self.alpha = alpha
         self.beta = beta
