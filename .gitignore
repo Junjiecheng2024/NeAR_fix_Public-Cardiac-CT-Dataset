@@ -61,5 +61,6 @@ wandb/
 *.nii
 *.png
 *.csv
+*.pdf
 
 
