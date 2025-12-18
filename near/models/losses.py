@@ -184,3 +184,75 @@ class BoundaryDiceLoss(nn.Module):
         
         dice = (2 * intersection + self.smooth) / (union + self.smooth)
         return 1 - dice
+
+
+class TverskyLoss(nn.Module):
+    """
+    Tversky Loss - generalizes Dice loss with adjustable alpha/beta.
+    Better for highly imbalanced segmentation (like coronary arteries).
+    
+    - alpha > beta: emphasizes recall (reduces false negatives / missed detections)
+    - alpha < beta: emphasizes precision (reduces false positives)
+    
+    For small structures like coronary: use alpha=0.7, beta=0.3 to prioritize recall.
+    
+    Args:
+        alpha: weight for false positives (default: 0.7)
+        beta: weight for false negatives (default: 0.3)
+        smooth: smoothing factor (default: 1e-5)
+    """
+    def __init__(self, alpha=0.7, beta=0.3, smooth=1e-5):
+        super().__init__()
+        self.alpha = alpha
+        self.beta = beta
+        self.smooth = smooth
+    
+    def forward(self, pred_prob, target):
+        """
+        Args:
+            pred_prob: predicted probability (B, 1, D, H, W)
+            target: ground truth binary mask (B, 1, D, H, W)
+        """
+        pred_flat = pred_prob.reshape(-1)
+        target_flat = target.reshape(-1)
+        
+        # True positives, false positives, false negatives
+        tp = (pred_flat * target_flat).sum()
+        fp = (pred_flat * (1 - target_flat)).sum()
+        fn = ((1 - pred_flat) * target_flat).sum()
+        
+        tversky = (tp + self.smooth) / (tp + self.alpha * fp + self.beta * fn + self.smooth)
+        return 1 - tversky
+
+
+class TopKLoss(nn.Module):
+    """
+    TopK Loss - focuses on the hardest K% of voxels.
+    Helps with class imbalance by ignoring easy negatives.
+    
+    Args:
+        k: percentage of hardest voxels to use (default: 0.1 = 10%)
+    """
+    def __init__(self, k=0.1):
+        super().__init__()
+        self.k = k
+    
+    def forward(self, pred_logit, target):
+        """
+        Args:
+            pred_logit: raw logits (B, 1, D, H, W)
+            target: ground truth binary mask (B, 1, D, H, W)
+        """
+        # Compute per-voxel BCE loss
+        bce = F.binary_cross_entropy_with_logits(pred_logit, target, reduction='none')
+        
+        # Flatten and sort
+        bce_flat = bce.reshape(-1)
+        n_voxels = bce_flat.shape[0]
+        k_voxels = max(int(n_voxels * self.k), 1)
+        
+        # Take top-k (hardest) losses
+        topk_loss, _ = torch.topk(bce_flat, k_voxels)
+        
+        return topk_loss.mean()
+

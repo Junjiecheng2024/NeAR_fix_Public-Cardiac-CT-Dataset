@@ -44,10 +44,12 @@ class BaseConfig:
     use_cosine_schedule: bool = True
     warmup_ratio: float = 0.02
     
-    # Loss weights
-    dice_weight: float = 0.55
-    boundary_dice_weight: float = 0.25
-    focal_weight: float = 0.15
+    # Loss weights (optimized for small structures like coronary)
+    dice_weight: float = 0.3
+    tversky_weight: float = 0.35        # Emphasize recall
+    boundary_dice_weight: float = 0.2   # Focus on boundaries
+    focal_weight: float = 0.1           # Handle class imbalance
+    topk_weight: float = 0.05           # Hard example mining
     l2_penalty_weight: float = 1e-4
     
     # Sampling strategy

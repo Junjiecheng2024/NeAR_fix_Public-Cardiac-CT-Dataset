@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional
 import numpy as np
 
 from near.models.nn3d.model_shape_appearance import EmbeddingDecoderShapeAppearanceWithContext
-from near.models.losses import latent_l2_penalty, dice_score, FocalLoss, BoundaryDiceLoss
+from near.models.losses import latent_l2_penalty, dice_score, FocalLoss, BoundaryDiceLoss, TverskyLoss, TopKLoss
 
 
 class CoronaryTier2LightningModule(pl.LightningModule):
@@ -29,9 +29,11 @@ class CoronaryTier2LightningModule(pl.LightningModule):
         use_context: bool = True,
         lr: float = 5e-4,
         l2_penalty_weight: float = 1e-4,
-        dice_weight: float = 0.6,
+        dice_weight: float = 0.3,
+        tversky_weight: float = 0.35,
         boundary_dice_weight: float = 0.2,
-        focal_weight: float = 0.15,
+        focal_weight: float = 0.1,
+        topk_weight: float = 0.05,
         use_cosine_schedule: bool = True,
         warmup_ratio: float = 0.02,
         total_steps: Optional[int] = None,
@@ -50,14 +52,18 @@ class CoronaryTier2LightningModule(pl.LightningModule):
             use_context=use_context
         )
         
-        # Loss functions
+        # Loss functions - optimized for small structures
         self.focal_loss_fn = FocalLoss(alpha=0.25, gamma=4.0)
         self.boundary_dice_fn = BoundaryDiceLoss(boundary_width=2)
+        self.tversky_loss_fn = TverskyLoss(alpha=0.7, beta=0.3)  # Emphasize recall
+        self.topk_loss_fn = TopKLoss(k=0.1)  # Focus on hardest 10% voxels
         
-        # Loss weights
+        # Loss weights - rebalanced for coronary
         self.dice_weight = dice_weight
+        self.tversky_weight = tversky_weight
         self.boundary_dice_weight = boundary_dice_weight
         self.focal_weight = focal_weight
+        self.topk_weight = topk_weight
         self.l2_penalty_weight = l2_penalty_weight
         
         # Optimizer params
@@ -88,33 +94,43 @@ class CoronaryTier2LightningModule(pl.LightningModule):
         pred_logit, encoded = self(indices, grids, appearance, context)
         
         # Compute losses
-        # 1. Dice loss
         pred_prob = torch.sigmoid(pred_logit)
         dice = dice_score(pred_prob, labels)
+        
+        # 1. Dice loss
         dice_loss = 1.0 - dice
         
-        # 2. Boundary Dice loss
+        # 2. Tversky loss (emphasizes recall for small structures)
+        tversky_loss = self.tversky_loss_fn(pred_prob, labels)
+        
+        # 3. Boundary Dice loss
         boundary_dice_loss = self.boundary_dice_fn(pred_prob, labels)
         
-        # 3. Focal loss
+        # 4. Focal loss
         focal_loss = self.focal_loss_fn(pred_logit, labels)
         
-        # 4. L2 regularization on latent
+        # 5. TopK loss (hard example mining)
+        topk_loss = self.topk_loss_fn(pred_logit, labels)
+        
+        # 6. L2 regularization on latent
         l2_loss = latent_l2_penalty(encoded)
         
-        # Combined loss
+        # Combined loss (weights sum to ~1.0 for shape losses)
         shape_loss = (self.dice_weight * dice_loss + 
+                     self.tversky_weight * tversky_loss +
                      self.boundary_dice_weight * boundary_dice_loss +
-                     self.focal_weight * focal_loss)
+                     self.focal_weight * focal_loss +
+                     self.topk_weight * topk_loss)
         total_loss = shape_loss + self.l2_penalty_weight * l2_loss
         
         # Logging
         self.log('train/total_loss', total_loss, prog_bar=True, on_step=True, on_epoch=True)
-        self.log('train/dice_loss', dice_loss, on_step=True, on_epoch=True)
-        self.log('train/boundary_dice_loss', boundary_dice_loss, on_step=True, on_epoch=True)
-        self.log('train/focal_loss', focal_loss, on_step=True, on_epoch=True)
         self.log('train/dice_score', dice, prog_bar=True, on_step=True, on_epoch=True)
-        self.log('train/l2_loss', l2_loss, on_step=True, on_epoch=True)
+        self.log('train/dice_loss', dice_loss, on_step=False, on_epoch=True)
+        self.log('train/tversky_loss', tversky_loss, on_step=False, on_epoch=True)
+        self.log('train/boundary_dice_loss', boundary_dice_loss, on_step=False, on_epoch=True)
+        self.log('train/focal_loss', focal_loss, on_step=False, on_epoch=True)
+        self.log('train/topk_loss', topk_loss, on_step=False, on_epoch=True)
         
         return total_loss
     
@@ -136,19 +152,22 @@ class CoronaryTier2LightningModule(pl.LightningModule):
         pred_prob = torch.sigmoid(pred_logit)
         dice = dice_score(pred_prob, labels)
         dice_loss = 1.0 - dice
+        tversky_loss = self.tversky_loss_fn(pred_prob, labels)
         boundary_dice_loss = self.boundary_dice_fn(pred_prob, labels)
         focal_loss = self.focal_loss_fn(pred_logit, labels)
+        topk_loss = self.topk_loss_fn(pred_logit, labels)
         l2_loss = latent_l2_penalty(encoded)
         
         shape_loss = (self.dice_weight * dice_loss + 
+                     self.tversky_weight * tversky_loss +
                      self.boundary_dice_weight * boundary_dice_loss +
-                     self.focal_weight * focal_loss)
+                     self.focal_weight * focal_loss +
+                     self.topk_weight * topk_loss)
         total_loss = shape_loss + self.l2_penalty_weight * l2_loss
         
         self.log('val/total_loss', total_loss, prog_bar=True, on_epoch=True, sync_dist=True)
         self.log('val/dice_score', dice, prog_bar=True, on_epoch=True, sync_dist=True)
-        self.log('val/dice_loss', dice_loss, on_epoch=True, sync_dist=True)
-        self.log('val/boundary_dice_loss', boundary_dice_loss, on_epoch=True, sync_dist=True)
+        self.log('val/tversky_loss', tversky_loss, on_epoch=True, sync_dist=True)
         
         return total_loss
     

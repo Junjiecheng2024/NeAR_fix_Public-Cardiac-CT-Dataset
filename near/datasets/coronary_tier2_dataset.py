@@ -143,8 +143,11 @@ class CoronaryTier2Dataset(Dataset):
         return result
     
     def _augment(self, mask, ct, context):
-        """Apply random augmentations."""
-        # Random flip along each axis
+        """
+        Apply random augmentations optimized for coronary artery segmentation.
+        Includes geometric transforms and intensity augmentations.
+        """
+        # 1. Random flip along each axis (50% probability per axis)
         for axis in range(3):
             if np.random.random() > 0.5:
                 mask = np.flip(mask, axis=axis).copy()
@@ -152,13 +155,46 @@ class CoronaryTier2Dataset(Dataset):
                 if ct is not None:
                     ct = np.flip(ct, axis=axis).copy()
         
-        # Random 90-degree rotation in xy plane
+        # 2. Random 90-degree rotation in xy plane
         k = np.random.randint(4)
         if k > 0:
             mask = np.rot90(mask, k=k, axes=(1, 2)).copy()
             context = np.rot90(context, k=k, axes=(1, 2)).copy()
             if ct is not None:
                 ct = np.rot90(ct, k=k, axes=(1, 2)).copy()
+        
+        # 3. Random transpose (swap axes) - 20% probability
+        if np.random.random() < 0.2:
+            axes_order = list(np.random.permutation(3))
+            mask = np.transpose(mask, axes_order).copy()
+            context = np.transpose(context, axes_order).copy()
+            if ct is not None:
+                ct = np.transpose(ct, axes_order).copy()
+        
+        # 4. Intensity augmentation on CT (only if ct is available)
+        if ct is not None:
+            # 4a. Random brightness shift - 50% probability
+            if np.random.random() < 0.5:
+                brightness = np.random.uniform(-0.1, 0.1)
+                ct = np.clip(ct + brightness, 0, 1)
+            
+            # 4b. Random contrast adjustment - 50% probability
+            if np.random.random() < 0.5:
+                contrast = np.random.uniform(0.8, 1.2)
+                mean_val = ct.mean()
+                ct = np.clip((ct - mean_val) * contrast + mean_val, 0, 1)
+            
+            # 4c. Random Gaussian noise - 30% probability
+            if np.random.random() < 0.3:
+                noise_std = np.random.uniform(0.01, 0.03)
+                noise = np.random.normal(0, noise_std, ct.shape).astype(np.float32)
+                ct = np.clip(ct + noise, 0, 1)
+            
+            # 4d. Random gamma correction - 30% probability
+            if np.random.random() < 0.3:
+                gamma = np.random.uniform(0.8, 1.2)
+                ct = np.power(ct + 1e-8, gamma)
+                ct = np.clip(ct, 0, 1)
         
         return mask, ct, context
     
