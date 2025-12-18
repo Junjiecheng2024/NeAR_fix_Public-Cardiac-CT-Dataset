@@ -84,9 +84,8 @@ class CoronaryConfig(BaseConfig):
     run_flag: str = "Coronary_Tier2_"
     data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/coronary_tier2"
     
-    # Coronary-specific: longer training, higher boundary focus
+    # Coronary-specific: longer training
     n_epochs: int = 600
-    boundary_dice_weight: float = 0.25
 
 
 @dataclass

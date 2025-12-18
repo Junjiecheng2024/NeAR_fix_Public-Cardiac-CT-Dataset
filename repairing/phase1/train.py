@@ -171,9 +171,11 @@ def main(args):
         use_context=cfg.get('use_context', True),
         lr=cfg.get('lr', 5e-4),
         l2_penalty_weight=cfg.get('l2_penalty_weight', 1e-4),
-        dice_weight=cfg.get('dice_weight', 0.6),
+        dice_weight=cfg.get('dice_weight', 0.3),
+        tversky_weight=cfg.get('tversky_weight', 0.35),
         boundary_dice_weight=cfg.get('boundary_dice_weight', 0.2),
-        focal_weight=cfg.get('focal_weight', 0.15),
+        focal_weight=cfg.get('focal_weight', 0.1),
+        topk_weight=cfg.get('topk_weight', 0.05),
         use_cosine_schedule=cfg.get('use_cosine_schedule', True),
         warmup_ratio=cfg.get('warmup_ratio', 0.02),
     )
@@ -230,7 +232,7 @@ def main(args):
         check_val_every_n_epoch=cfg.get('eval_interval', 5),
         log_every_n_steps=50,
         deterministic=False,
-        use_distributed_sampler=False, # We use custom sampler or will add DistributedSampler manually
+        use_distributed_sampler=True,  # Enable for DDP training
     )
     
     # Train
