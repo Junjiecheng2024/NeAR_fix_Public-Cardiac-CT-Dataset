@@ -26,7 +26,15 @@ export PIP_CACHE_DIR=$WORKDIR/pip-cache
 export TMPDIR=$WORKDIR/pip-tmp
 export XDG_CACHE_HOME=$WORKDIR/.cache
 
+# WandB 和 Matplotlib 配置（避免写入只读的家目录）
+export WANDB_DIR=$WORKDIR/wandb
+export WANDB_CONFIG_DIR=$WORKDIR/.config/wandb
+export NETRC=$WORKDIR/.netrc
+export MPLCONFIGDIR=$WORKDIR/.config/matplotlib
+export HOME=$WORKDIR  # 让所有工具使用 scratch 作为 HOME
+
 mkdir -p "$OUTDIR/logs" "$OUTDIR/checkpoints" "$PIP_CACHE_DIR" "$TMPDIR" "$XDG_CACHE_HOME" "$PYTHONUSERBASE"
+mkdir -p "$WANDB_DIR" "$WANDB_CONFIG_DIR" "$MPLCONFIGDIR"
 
 # 让 pyuser/bin 里的命令可用（accelerate、wandb 等）
 export PATH="$PYTHONUSERBASE/bin:$PATH"
