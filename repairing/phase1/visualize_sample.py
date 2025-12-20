@@ -165,7 +165,7 @@ def main():
                        help="Dataset path")
     parser.add_argument("--sample_idx", type=int, default=0, help="Sample index to visualize")
     parser.add_argument("--case_id", type=str, default=None, help="Case ID to visualize (overrides sample_idx)")
-    parser.add_argument("--output", type=str, default=None, help="Output image path")
+    parser.add_argument("--output", type=str, default="/scratch/project_2016517/JunjieCheng/dataset/text", help="Output image path")
     parser.add_argument("--slices", type=int, nargs='+', default=None, help="Slice indices to visualize")
     parser.add_argument("--resolution", type=int, default=128, help="Inference resolution")
     
