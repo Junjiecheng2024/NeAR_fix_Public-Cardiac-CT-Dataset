@@ -2,10 +2,10 @@
 # ==============================================================================
 # submit_all_training.sh
 # ==============================================================================
-# Submit training jobs for all 9 cardiac classes (excluding Coronary)
+# Submit training jobs for available cardiac classes
 #
 # Usage:
-#   ./submit_all_training.sh           # Submit all 9 classes
+#   ./submit_all_training.sh           # Submit all available classes
 #   ./submit_all_training.sh --dry-run # Show what would be submitted
 # ==============================================================================
 
@@ -14,18 +14,17 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SBATCH_SCRIPT="${SCRIPT_DIR}/run_class_sbatch.sh"
 
-# All classes except Coronary (already trained)
+# Available classes (data prepared, excluding Coronary which is already trained)
+# Note: Due to disk space, only these 4 classes have data prepared
 CLASSES=(
     "aorta"
     "myocardium"
-    "la"
-    "lv"
-    "ra"
-    "rv"
-    "pa"
-    "pv"
     "laa"
+    "pv"
 )
+
+# Classes not yet prepared (disk space issue):
+# la, lv, ra, rv, pa
 
 DRY_RUN=false
 if [[ "$1" == "--dry-run" ]]; then
