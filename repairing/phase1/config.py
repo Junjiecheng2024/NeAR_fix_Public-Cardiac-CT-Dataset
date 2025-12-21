@@ -93,58 +93,63 @@ class AortaConfig(BaseConfig):
     """Aorta configuration (Tier1 - medium structure)."""
     class_name: str = "Aorta"
     class_index: int = 6
-    run_flag: str = "Aorta_"
-    data_path: str = "/scratch/project_2016517/junjie/dataset/aorta_tier2"
+    run_flag: str = "Aorta_Tier2_"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/aorta_tier2"
     
-    # Aorta: simpler structure, less boundary focus needed
+    # Aorta: simpler structure
     n_epochs: int = 400
-    boundary_dice_weight: float = 0.2
+    boundary_dice_weight: float = 0.15
 
 
 @dataclass
 class MyocardiumConfig(BaseConfig):
     """Myocardium configuration (Tier1 - large structure)."""
     class_name: str = "Myocardium"
-    class_index: int = 5
-    run_flag: str = "Myocardium_"
-    data_path: str = "/scratch/project_2016517/junjie/dataset/myocardium_tier2"
+    class_index: int = 1
+    run_flag: str = "Myocardium_Tier2_"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/myocardium_tier2"
     n_epochs: int = 400
+    boundary_dice_weight: float = 0.15
 
 
 @dataclass 
 class LAConfig(BaseConfig):
     """Left Atrium configuration."""
     class_name: str = "LA"
-    class_index: int = 1
-    run_flag: str = "LA_"
-    data_path: str = "/scratch/project_2016517/junjie/dataset/la_tier2"
+    class_index: int = 2
+    run_flag: str = "LA_Tier2_"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/la_tier2"
+    n_epochs: int = 400
 
 
 @dataclass
 class LVConfig(BaseConfig):
     """Left Ventricle configuration."""
     class_name: str = "LV"
-    class_index: int = 2
-    run_flag: str = "LV_"
-    data_path: str = "/scratch/project_2016517/junjie/dataset/lv_tier2"
+    class_index: int = 3
+    run_flag: str = "LV_Tier2_"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/lv_tier2"
+    n_epochs: int = 400
 
 
 @dataclass
 class RAConfig(BaseConfig):
     """Right Atrium configuration."""
     class_name: str = "RA"
-    class_index: int = 3
-    run_flag: str = "RA_"
-    data_path: str = "/scratch/project_2016517/junjie/dataset/ra_tier2"
+    class_index: int = 4
+    run_flag: str = "RA_Tier2_"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/ra_tier2"
+    n_epochs: int = 400
 
 
 @dataclass
 class RVConfig(BaseConfig):
     """Right Ventricle configuration."""
     class_name: str = "RV"
-    class_index: int = 4
-    run_flag: str = "RV_"
-    data_path: str = "/scratch/project_2016517/junjie/dataset/rv_tier2"
+    class_index: int = 5
+    run_flag: str = "RV_Tier2_"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/rv_tier2"
+    n_epochs: int = 400
 
 
 @dataclass
@@ -152,26 +157,29 @@ class PAConfig(BaseConfig):
     """Pulmonary Artery configuration."""
     class_name: str = "PA"
     class_index: int = 7
-    run_flag: str = "PA_"
-    data_path: str = "/scratch/project_2016517/junjie/dataset/pa_tier2"
+    run_flag: str = "PA_Tier2_"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/pa_tier2"
+    n_epochs: int = 400
 
 
 @dataclass
 class PVConfig(BaseConfig):
-    """Pulmonary Vein configuration."""
+    """Pulmonary Vein configuration (small structure)."""
     class_name: str = "PV"
-    class_index: int = 8
-    run_flag: str = "PV_"
-    data_path: str = "/scratch/project_2016517/junjie/dataset/pv_tier2"
+    class_index: int = 10
+    run_flag: str = "PV_Tier2_"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/pv_tier2"
+    n_epochs: int = 500  # More epochs for small structure
 
 
 @dataclass
 class LAAConfig(BaseConfig):
-    """Left Atrial Appendage configuration."""
+    """Left Atrial Appendage configuration (small structure)."""
     class_name: str = "LAA"
-    class_index: int = 10
-    run_flag: str = "LAA_"
-    data_path: str = "/scratch/project_2016517/junjie/dataset/laa_tier2"
+    class_index: int = 8
+    run_flag: str = "LAA_Tier2_"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/laa_tier2"
+    n_epochs: int = 500  # More epochs for small structure
 
 
 # Config registry for easy access

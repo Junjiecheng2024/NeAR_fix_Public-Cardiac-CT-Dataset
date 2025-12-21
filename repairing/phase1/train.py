@@ -128,16 +128,35 @@ class Tier2DataModule:
         )
 
 
-def load_config(path):
-    """Load config from Python file."""
-    spec = importlib.util.spec_from_file_location("config", path)
+def load_config(config_path: str, class_name: str = None):
+    """
+    Load config from Python file.
+    
+    Args:
+        config_path: Path to config.py file
+        class_name: Optional class name to load specific config (e.g., 'coronary', 'aorta')
+    
+    Returns:
+        Configuration dictionary
+    """
+    spec = importlib.util.spec_from_file_location("config", config_path)
     cfg_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cfg_module)
-    return cfg_module.cfg
+    
+    if class_name is not None:
+        # Use get_config function from config module to get class-specific config
+        if hasattr(cfg_module, 'get_config'):
+            config_obj = cfg_module.get_config(class_name)
+            return config_obj.to_dict()
+        else:
+            raise ValueError(f"Config module does not have get_config function")
+    else:
+        # Backward compatibility: use default cfg
+        return cfg_module.cfg
 
 
 def main(args):
-    cfg = load_config(args.config)
+    cfg = load_config(args.config, args.class_name)
     
     print(f"\n{'='*70}")
     print("NeAR v2.0 Tier2 Training (Shape + Appearance)")
@@ -145,6 +164,7 @@ def main(args):
     print(f"Config: {args.config}")
     print(f"Class: {cfg['class_name']}")
     print(f"Epochs: {cfg['n_epochs']}")
+    print(f"Data Path: {cfg['data_path']}")
     print(f"Use Appearance: {cfg.get('use_appearance', True)}")
     print(f"Use Context: {cfg.get('use_context', True)}")
     print(f"{'='*70}\n")
@@ -253,6 +273,8 @@ if __name__ == '__main__':
                         help='DDP strategy (e.g., ddp)')
     parser.add_argument('--config', type=str, required=True, 
                         help='Path to config file')
+    parser.add_argument('--class_name', type=str, default=None,
+                        help='Class name to train (e.g., coronary, aorta, la, lv, ra, rv, pa, pv, laa, myocardium)')
     args = parser.parse_args()
     
     # Parse devices: can be int or "auto"
@@ -262,3 +284,4 @@ if __name__ == '__main__':
         args.devices = int(args.devices)
     
     main(args)
+
