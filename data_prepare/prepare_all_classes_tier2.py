@@ -81,16 +81,16 @@ CONTEXT_DEFINITIONS = {
 
 # Margin settings (voxels) - larger for smaller structures
 MARGIN_SETTINGS = {
-    "Myocardium": 30,
-    "LA": 25,
-    "LV": 25,
-    "RA": 25,
-    "RV": 25,
-    "Aorta": 30,
-    "PA": 25,
-    "LAA": 20,  # Small structure
-    "Coronary": 20,  # Small structure
-    "PV": 20,  # Small structure
+    "Myocardium": 10,
+    "LA": 10,
+    "LV": 10,
+    "RA": 10,
+    "RV": 10,
+    "Aorta": 10,
+    "PA": 10,
+    "LAA": 10,  # Small structure
+    "Coronary": 10,  # Small structure
+    "PV": 10,  # Small structure
 }
 
 # CT normalization parameters (cardiac CT window)
