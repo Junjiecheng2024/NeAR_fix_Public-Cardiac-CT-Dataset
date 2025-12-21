@@ -88,9 +88,9 @@ MARGIN_SETTINGS = {
     "RV": 10,
     "Aorta": 10,
     "PA": 10,
-    "LAA": 10,  # Small structure
-    "Coronary": 10,  # Small structure
-    "PV": 10,  # Small structure
+    "LAA": 5,  # Small structure
+    "Coronary": 5,  # Small structure
+    "PV": 5,  # Small structure
 }
 
 # CT normalization parameters (cardiac CT window)
