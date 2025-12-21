@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
 #SBATCH --cpus-per-task=16
-#SBATCH --time=47:00:00
+#SBATCH --time=36:00:00
 #SBATCH --gres=gpu:a100:4
 #SBATCH --partition=gpumedium
 #SBATCH -o /scratch/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/phase1/logs/%x_%j.out
