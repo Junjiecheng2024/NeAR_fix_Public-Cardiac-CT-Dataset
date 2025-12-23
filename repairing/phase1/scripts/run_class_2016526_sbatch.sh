@@ -2,8 +2,8 @@
 #SBATCH -A project_2016526
 #SBATCH --job-name=near_phase1_2016526
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4
-#SBATCH --cpus-per-task=16
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=64
 #SBATCH --time=36:00:00
 #SBATCH --gres=gpu:a100:4
 #SBATCH --partition=gpumedium
@@ -15,6 +15,8 @@
 # ============================================================================
 # For: LA, LV, RA, RV, PA (data in /scratch/project_2016526/)
 # Uses config_2016526.py instead of config.py
+# 
+# NOTE: ntasks-per-node=1 because torchrun handles multi-GPU parallelism
 # ============================================================================
 
 # Get class name from command line argument
@@ -50,31 +52,33 @@ export PYTORCH_ALLOC_CONF=expandable_segments:True
 # Container path
 CONTAINER=$WORKDIR/pytorch.sif
 
+# Dynamic master port to avoid conflicts when multiple jobs run on same node
+MASTER_PORT=$((29500 + SLURM_JOB_ID % 10000))
+
 echo "=============================================="
 echo "Job ID: $SLURM_JOB_ID"
 echo "Node: $SLURMD_NODENAME"
 echo "Class: $CLASS_NAME"
 echo "Config: config_2016526.py"
 echo "Data: /scratch/project_2016526/JunjieCheng/dataset/"
+echo "MASTER_PORT: $MASTER_PORT"
 echo "=============================================="
 
 cd "$PROJECTDIR"
 
-# Run training with the separate config file
+# Run training with torchrun for DDP (ntasks=1, torchrun spawns 4 processes)
 srun apptainer exec --nv \
   -B /scratch:/scratch \
   -B /projappl:/projappl \
   "$CONTAINER" \
-  bash -lc "
-    set -e
-    echo 'Using python:' \$(which python)
-    python -c 'import torch; print(\"torch:\", torch.__version__, \"cuda:\", torch.cuda.is_available())'
-
-    python repairing/phase1/train.py \
-      --devices 4 \
-      --strategy ddp \
-      --config repairing/phase1/config_2016526.py \
-      --class_name $CLASS_NAME
-  "
+  python -m torch.distributed.run \
+    --nproc_per_node=4 \
+    --nnodes=1 \
+    --master_port="$MASTER_PORT" \
+    repairing/phase1/train.py \
+    --devices 4 \
+    --strategy ddp \
+    --config repairing/phase1/config_2016526.py \
+    --class_name "$CLASS_NAME"
 
 echo "Training complete for class: $CLASS_NAME"

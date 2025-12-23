@@ -2,8 +2,8 @@
 #SBATCH -A project_2016526
 #SBATCH --job-name=near_phase1
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4
-#SBATCH --cpus-per-task=16
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=64
 #SBATCH --time=36:00:00
 #SBATCH --gres=gpu:a100:4
 #SBATCH --partition=gpumedium
@@ -57,6 +57,10 @@ echo "=============================================="
 # Container path
 CONTAINER=$WORKDIR/pytorch.sif
 
+# Dynamic master port to avoid conflicts when multiple jobs run on same node
+MASTER_PORT=$((29500 + SLURM_JOB_ID % 10000))
+echo "Using MASTER_PORT: $MASTER_PORT"
+
 # Run training with torchrun for DDP
 srun apptainer exec --nv \
     -B /scratch:/scratch \
@@ -65,7 +69,7 @@ srun apptainer exec --nv \
     python -m torch.distributed.run \
     --nproc_per_node=4 \
     --nnodes=1 \
-    --master_port=29500 \
+    --master_port=$MASTER_PORT \
     $PROJDIR/repairing/phase1/train.py \
     --config $PROJDIR/repairing/phase1/config.py \
     --class_name $CLASS_NAME \
