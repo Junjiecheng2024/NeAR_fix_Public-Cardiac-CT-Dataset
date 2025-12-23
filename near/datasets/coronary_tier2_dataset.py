@@ -55,9 +55,10 @@ class CoronaryTier2Dataset(Dataset):
         self.augment = augment
         
         # Find all case directories
+        # Note: mask_target.npy is the generic mask file saved by data preparation
         self.case_dirs = []
         for d in sorted(self.root.iterdir()):
-            if d.is_dir() and (d / "mask_coronary.npy").exists():
+            if d.is_dir() and (d / "mask_target.npy").exists():
                 self.case_dirs.append(d)
         
         # Limit samples if specified
@@ -93,8 +94,8 @@ class CoronaryTier2Dataset(Dataset):
         case_dir = self.case_dirs[index]
         case_id = case_dir.name
         
-        # Load coronary mask (shape)
-        mask = np.load(case_dir / "mask_coronary.npy").astype(np.float32)
+        # Load target mask (shape) - mask_target.npy is the generic name for all classes
+        mask = np.load(case_dir / "mask_target.npy").astype(np.float32)
         
         # Load CT if using appearance
         if self.use_appearance:
