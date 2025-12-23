@@ -234,24 +234,25 @@ def main(args):
     # Trainer
     precision = '16-mixed' if cfg.get('use_amp', True) else 32
     
-    # When using torch.distributed.run (torchrun), it already spawns multiple processes.
-    # Each process should only use 1 GPU - torchrun handles the distribution.
-    # Lightning will auto-detect the TorchElastic environment.
+    # Use Lightning's native multi-GPU support
+    # When devices > 1, Lightning will spawn worker processes and handle DDP
+    num_devices = args.devices if args.devices != 'auto' else 'auto'
+    use_ddp = (isinstance(num_devices, int) and num_devices > 1) or num_devices == 'auto'
     
     trainer = Trainer(
-        logger=wandb_logger if global_rank == 0 else None,
+        logger=wandb_logger,
         callbacks=[ckpt_cb, lr_monitor],
         max_epochs=cfg['n_epochs'],
         accelerator='gpu',
-        devices=1,  # Each torchrun process uses 1 GPU
+        devices=num_devices,
         num_nodes=1,
-        strategy='ddp',  # Lightning auto-detects torchrun/elastic environment
+        strategy='ddp' if use_ddp else 'auto',
         precision=precision,
         accumulate_grad_batches=cfg.get('gradient_accumulation_steps', 1),
         check_val_every_n_epoch=cfg.get('eval_interval', 5),
         log_every_n_steps=50,
         deterministic=False,
-        use_distributed_sampler=True,  # Enable for DDP training
+        use_distributed_sampler=use_ddp,
     )
     
     # Train

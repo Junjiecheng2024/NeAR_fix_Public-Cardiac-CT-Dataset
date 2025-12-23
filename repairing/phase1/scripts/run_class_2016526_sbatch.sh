@@ -2,7 +2,7 @@
 #SBATCH -A project_2016526
 #SBATCH --job-name=near_phase1_2016526
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=64
 #SBATCH --time=36:00:00
 #SBATCH --gres=gpu:a100:4
@@ -15,8 +15,7 @@
 # ============================================================================
 # For: LA, LV, RA, RV, PA (data in /scratch/project_2016526/)
 # Uses config_2016526.py instead of config.py
-# 
-# NOTE: ntasks-per-node=1 because torchrun handles multi-GPU parallelism
+# Uses Lightning's native multi-GPU support (no torchrun)
 # ============================================================================
 
 # Get class name from command line argument
@@ -49,11 +48,11 @@ export PATH="$PYTHONUSERBASE/bin:$PATH"
 export OMP_NUM_THREADS=8
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 
+# Make all 4 GPUs visible
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+
 # Container path
 CONTAINER=$WORKDIR/pytorch.sif
-
-# Dynamic master port to avoid conflicts when multiple jobs run on same node
-MASTER_PORT=$((29500 + SLURM_JOB_ID % 10000))
 
 echo "=============================================="
 echo "Job ID: $SLURM_JOB_ID"
@@ -61,23 +60,18 @@ echo "Node: $SLURMD_NODENAME"
 echo "Class: $CLASS_NAME"
 echo "Config: config_2016526.py"
 echo "Data: /scratch/project_2016526/JunjieCheng/dataset/"
-echo "MASTER_PORT: $MASTER_PORT"
+echo "GPUs: $CUDA_VISIBLE_DEVICES"
 echo "=============================================="
 
 cd "$PROJECTDIR"
 
-# Run training with torchrun for DDP (ntasks=1, torchrun spawns 4 processes)
+# Run training - Lightning handles multi-GPU via devices=4
 srun apptainer exec --nv \
   -B /scratch:/scratch \
   -B /projappl:/projappl \
   "$CONTAINER" \
-  python -m torch.distributed.run \
-    --nproc_per_node=4 \
-    --nnodes=1 \
-    --master_port="$MASTER_PORT" \
-    repairing/phase1/train.py \
+  python repairing/phase1/train.py \
     --devices 4 \
-    --strategy ddp \
     --config repairing/phase1/config_2016526.py \
     --class_name "$CLASS_NAME"
 
