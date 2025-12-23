@@ -234,19 +234,18 @@ def main(args):
     # Trainer
     precision = '16-mixed' if cfg.get('use_amp', True) else 32
     
-    # Correct Lightning + SLURM (srun) configuration:
-    # 1. devices=4 (matches ntasks-per-node=4)
-    # 2. strategy='ddp' 
-    # 3. Lightning automatically maps rank to GPU
+    # When using torch.distributed.run (torchrun), it already spawns multiple processes.
+    # Each process should only use 1 GPU - torchrun handles the distribution.
+    # Lightning will auto-detect the TorchElastic environment.
     
     trainer = Trainer(
         logger=wandb_logger if global_rank == 0 else None,
         callbacks=[ckpt_cb, lr_monitor],
         max_epochs=cfg['n_epochs'],
         accelerator='gpu',
-        devices=world_size if world_size > 1 else 1, # Should match SLURM ntasks
+        devices=1,  # Each torchrun process uses 1 GPU
         num_nodes=1,
-        strategy='ddp',
+        strategy='ddp',  # Lightning auto-detects torchrun/elastic environment
         precision=precision,
         accumulate_grad_batches=cfg.get('gradient_accumulation_steps', 1),
         check_val_every_n_epoch=cfg.get('eval_interval', 5),
