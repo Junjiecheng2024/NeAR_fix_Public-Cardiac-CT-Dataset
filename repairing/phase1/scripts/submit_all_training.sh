@@ -17,7 +17,6 @@ SBATCH_SCRIPT="${SCRIPT_DIR}/run_class_sbatch.sh"
 # Available classes (data prepared, excluding Coronary which is already trained)
 # Note: Due to disk space, only these 4 classes have data prepared
 CLASSES=(
-    "aorta"
     "myocardium"
     "laa"
     "pv"
