@@ -173,6 +173,8 @@ def main():
     parser.add_argument("--output_dir", type=str, required=True, help="Output directory")
     parser.add_argument("--chunk_size", type=int, default=128, help="Chunk size for sliding window")
     parser.add_argument("--no_sliding_window", action="store_true", help="Disable sliding window")
+    parser.add_argument("--inference_resolution", type=int, default=None, 
+                        help="Inference resolution (default: use config's target_resolution)")
     
     args = parser.parse_args()
     
@@ -190,10 +192,14 @@ def main():
     # Device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
+    # Determine inference resolution
+    inference_res = args.inference_resolution if args.inference_resolution else cfg.get('target_resolution')
+    print(f"Inference resolution: {inference_res}³")
+    
     # Load dataset (no augmentation for inference)
     dataset = CoronaryTier2Dataset(
         root=cfg['data_path'],
-        resolution=cfg.get('target_resolution'),
+        resolution=inference_res,
         n_samples=cfg.get('n_training_samples'),
         use_appearance=cfg.get('use_appearance', True),
         boundary_bias_ratio=0.0,
