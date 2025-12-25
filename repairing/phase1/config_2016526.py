@@ -86,7 +86,7 @@ class LAConfig(BaseConfig):
     class_name: str = "LA"
     class_index: int = 2
     run_flag: str = "LA_Tier2_"
-    data_path: str = "/scratch/project_2016526/JunjieCheng/dataset/la_tier2"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/la_tier2"
     n_epochs: int = 400
 
 
@@ -96,7 +96,7 @@ class LVConfig(BaseConfig):
     class_name: str = "LV"
     class_index: int = 3
     run_flag: str = "LV_Tier2_"
-    data_path: str = "/scratch/project_2016526/JunjieCheng/dataset/lv_tier2"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/lv_tier2"
     n_epochs: int = 400
 
 
@@ -106,7 +106,7 @@ class RAConfig(BaseConfig):
     class_name: str = "RA"
     class_index: int = 4
     run_flag: str = "RA_Tier2_"
-    data_path: str = "/scratch/project_2016526/JunjieCheng/dataset/ra_tier2"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/ra_tier2"
     n_epochs: int = 400
 
 
@@ -116,7 +116,7 @@ class RVConfig(BaseConfig):
     class_name: str = "RV"
     class_index: int = 5
     run_flag: str = "RV_Tier2_"
-    data_path: str = "/scratch/project_2016526/JunjieCheng/dataset/rv_tier2"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/rv_tier2"
     n_epochs: int = 400
 
 
@@ -126,7 +126,7 @@ class PAConfig(BaseConfig):
     class_name: str = "PA"
     class_index: int = 7
     run_flag: str = "PA_Tier2_"
-    data_path: str = "/scratch/project_2016526/JunjieCheng/dataset/pa_tier2"
+    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/pa_tier2"
     n_epochs: int = 400
 
 

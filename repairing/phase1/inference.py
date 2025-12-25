@@ -17,6 +17,7 @@ import importlib.util
 
 import torch
 import torch.nn.functional as F
+from scipy.ndimage import zoom
 
 # Add project root to path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -47,13 +48,61 @@ def create_full_grid(shape, device):
     return grid.unsqueeze(0).to(device)  # (1, D, H, W, 3)
 
 
+def map_to_global(
+    pred_crop: np.ndarray, 
+    crop_params: dict, 
+    global_shape: tuple = (256, 256, 256)
+) -> np.ndarray:
+    """
+    Map cropped prediction back to global coordinate space.
+    """
+    origin = np.array(crop_params['origin'])  # [z, y, x] in original space
+    original_crop_size = np.array(crop_params['size'])  # [d, h, w] before resize
+    
+    # Check if resize was applied during preprocessing
+    if crop_params.get('resize_applied', False):
+        zoom_factors = original_crop_size / np.array(pred_crop.shape)
+        pred_original_size = zoom(pred_crop.astype(np.float32), zoom_factors, order=0)
+        pred_original_size = (pred_original_size > 0.5).astype(np.uint8)
+    else:
+        pred_original_size = pred_crop
+    
+    # Create global volume
+    pred_global = np.zeros(global_shape, dtype=np.uint8)
+    
+    # Compute end coordinates
+    end = origin + np.array(pred_original_size.shape)
+    
+    # Clip to global bounds
+    valid_start = np.maximum(origin, 0).astype(int)
+    valid_end = np.minimum(end, np.array(global_shape)).astype(int)
+    
+    # Compute offsets in crop space
+    crop_start = (valid_start - origin).astype(int)
+    crop_end = (crop_start + (valid_end - valid_start)).astype(int)
+    
+    # Place crop into global volume
+    pred_global[
+        valid_start[0]:valid_end[0],
+        valid_start[1]:valid_end[1],
+        valid_start[2]:valid_end[2]
+    ] = pred_original_size[
+        crop_start[0]:crop_end[0],
+        crop_start[1]:crop_end[1],
+        crop_start[2]:crop_end[2]
+    ]
+    
+    return pred_global
+
+
 def run_inference(
     model,
     dataset,
     device,
     output_dir,
     chunk_size=64,
-    use_sliding_window=True
+    use_sliding_window=True,
+    global_shape=256
 ):
     """
     Run inference on all samples.
@@ -100,27 +149,29 @@ def run_inference(
                     chunk_size, device
                 )
             
-            # Save probability map
+            # Convert to numpy and threshold
             pred_np = pred_prob.squeeze().cpu().numpy()
+            mask_crop = (pred_np > 0.5).astype(np.uint8)
             
-            case_output_dir = output_dir / case_id
-            case_output_dir.mkdir(exist_ok=True)
+            # Get crop params for coordinate mapping
+            crop_params = dataset.get_crop_params(case_id)
             
-            np.save(case_output_dir / "pred_prob.npy", pred_np.astype(np.float32))
-            
-            # Also save binary mask
-            mask = (pred_np > 0.5).astype(np.uint8)
-            np.save(case_output_dir / "pred_mask.npy", mask)
-            
-            # Save metadata
-            metadata = {
-                "case_id": case_id,
-                "pred_shape": list(pred_np.shape),
-                "positive_voxels": int(mask.sum()),
-                "positive_ratio": float(mask.mean())
-            }
-            with open(case_output_dir / "metadata.json", 'w') as f:
-                json.dump(metadata, f, indent=2)
+            if crop_params is not None:
+                # Map to global 256³ space
+                mask_global = map_to_global(mask_crop, crop_params, (global_shape,)*3)
+                
+                # Save global mask (flat structure for Phase 2/3 compatibility)
+                np.save(output_dir / f"{case_id}_mask.npy", mask_global)
+                
+                positive_voxels = int(mask_global.sum())
+                positive_ratio = float(mask_global.mean())
+            else:
+                # No crop params, save crop-space mask
+                case_output_dir = output_dir / case_id
+                case_output_dir.mkdir(exist_ok=True)
+                np.save(case_output_dir / "pred_mask.npy", mask_crop)
+                positive_voxels = int(mask_crop.sum())
+                positive_ratio = float(mask_crop.mean())
 
 
 def sliding_window_inference(
@@ -175,6 +226,8 @@ def main():
     parser.add_argument("--no_sliding_window", action="store_true", help="Disable sliding window")
     parser.add_argument("--inference_resolution", type=int, default=None, 
                         help="Inference resolution (default: use config's target_resolution)")
+    parser.add_argument("--global_shape", type=int, default=256,
+                        help="Global output shape for coordinate mapping (default: 256)")
     
     args = parser.parse_args()
     
@@ -230,14 +283,16 @@ def main():
     model = model.to(device)
     print("Model loaded successfully!")
     
-    # Run inference
+    # Run inference with coordinate mapping
+    print(f"Output global shape: {args.global_shape}³")
     run_inference(
         model=model,
         dataset=dataset,
         device=device,
         output_dir=args.output_dir,
         chunk_size=args.chunk_size,
-        use_sliding_window=not args.no_sliding_window
+        use_sliding_window=not args.no_sliding_window,
+        global_shape=args.global_shape
     )
     
     print(f"\nInference complete! Results saved to: {args.output_dir}")

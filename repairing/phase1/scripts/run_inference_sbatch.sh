@@ -46,18 +46,18 @@ export CUDA_VISIBLE_DEVICES=0
 CONTAINER=$WORKDIR/pytorch.sif
 
 # Determine config file based on class
-# Classes in project_2016526: la, lv, ra, rv, pa
-# Classes in project_2016517: coronary, aorta, myocardium, pv, laa
+# Note: All data now in project_2016517
 case $CLASS_NAME in
     la|lv|ra|rv|pa)
         CONFIG=$PROJDIR/repairing/phase1/config_2016526.py
-        DATA_BASE=/scratch/project_2016526/JunjieCheng/dataset
         ;;
     *)
         CONFIG=$PROJDIR/repairing/phase1/config.py
-        DATA_BASE=/scratch/project_2016517/JunjieCheng/dataset
         ;;
 esac
+
+# All classes use project_2016517 for data
+DATA_BASE=/scratch/project_2016517/JunjieCheng/dataset
 
 # Convert class name to match checkpoint folder name (capitalize first letter)
 CLASS_UPPER=$(echo "$CLASS_NAME" | sed 's/.*/\u&/')
@@ -79,10 +79,10 @@ echo "Config: $CONFIG"
 echo "Checkpoint: $CHECKPOINT"
 echo "=============================================="
 
-# Output directory for predictions
-OUTPUT_DIR=${DATA_BASE}/${CLASS_NAME}_tier2/predictions
+# Output directory for global-space predictions (256³)
+OUTPUT_DIR=${DATA_BASE}/${CLASS_NAME}_global
 
-# Run inference at 256³ resolution
+# Run inference at 256³ resolution with coordinate mapping to global space
 srun apptainer exec --nv \
     -B /scratch:/scratch \
     -B /projappl:/projappl \
@@ -92,7 +92,8 @@ srun apptainer exec --nv \
     --checkpoint "$CHECKPOINT" \
     --output_dir $OUTPUT_DIR \
     --chunk_size 128 \
-    --inference_resolution 256
+    --inference_resolution 256 \
+    --global_shape 256
 
 echo "Inference complete for class: $CLASS_NAME"
-echo "Results saved to: $OUTPUT_DIR"
+echo "Results saved to: $OUTPUT_DIR (256³ global space)"
