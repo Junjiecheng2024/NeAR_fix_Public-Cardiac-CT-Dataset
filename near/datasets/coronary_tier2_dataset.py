@@ -98,6 +98,7 @@ class CoronaryTier2Dataset(Dataset):
         mask = np.load(case_dir / "mask_target.npy").astype(np.float32)
         
         # Load CT if using appearance
+        ct = None
         if self.use_appearance:
             ct = np.load(case_dir / "ct.npy").astype(np.float32)
         else:
