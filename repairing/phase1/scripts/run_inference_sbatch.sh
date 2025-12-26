@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --time=36:00:00
 #SBATCH --gres=gpu:a100:1
-#SBATCH -p gpumedium
+#SBATCH -p gpusmall
 #SBATCH -o /scratch/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/phase1/logs/inference_%x_%j.out
 #SBATCH -e /scratch/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/phase1/logs/inference_%x_%j.err
 
