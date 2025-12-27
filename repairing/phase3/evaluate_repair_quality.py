@@ -261,11 +261,17 @@ def main():
     tasks = []
     for cid in case_ids:
         # Check GT paths
-        gt_path = os.path.join(args.gt_root, f"{cid}.nii.gz")
-        if not os.path.exists(gt_path):
-             gt_path = os.path.join(args.gt_root, "segmentations", f"{cid}.nii.gz")
+        # Try various patterns found in user dataset
+        candidates = [
+            os.path.join(args.gt_root, f"{cid}.nii.gz"),
+            os.path.join(args.gt_root, "segmentations", f"{cid}.nii.gz"),
+            os.path.join(args.gt_root, f"{cid}.nii.img.nii.gz"),  # Found pattern
+            os.path.join(args.gt_root, "segmentations", f"{cid}.nii.img.nii.gz") 
+        ]
         
-        if os.path.exists(gt_path):
+        gt_path = next((p for p in candidates if os.path.exists(p)), None)
+        
+        if gt_path:
              tasks.append((cid, args.data_root, gt_path, (1,1,1)))
         
     print(f"Found GT for {len(tasks)} cases. Starting evaluation...")
