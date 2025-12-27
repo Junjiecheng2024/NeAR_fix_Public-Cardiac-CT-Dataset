@@ -59,8 +59,17 @@ esac
 # All classes use project_2016517 for data
 DATA_BASE=/scratch/project_2016517/JunjieCheng/dataset
 
-# Convert class name to match checkpoint folder name (capitalize first letter)
-CLASS_UPPER=$(echo "$CLASS_NAME" | sed 's/.*/\u&/')
+# Convert class name to match checkpoint folder name
+# Abbreviations (LA, LV, RA, RV, PA, LAA, PV) are ALL CAPS
+# Others (Coronary, Aorta, Myocardium) are Title Case
+case $CLASS_NAME in
+    la|lv|ra|rv|pa|laa|pv)
+        CLASS_UPPER=$(echo "$CLASS_NAME" | tr '[:lower:]' '[:upper:]')
+        ;;
+    *)
+        CLASS_UPPER=$(echo "$CLASS_NAME" | sed 's/.*/\u&/')
+        ;;
+esac
 
 # Find the latest checkpoint for this class
 CHECKPOINT=$(ls -td ${CHECKPOINT_BASE}/${CLASS_UPPER}_Tier2_* 2>/dev/null | head -1)/best.ckpt
