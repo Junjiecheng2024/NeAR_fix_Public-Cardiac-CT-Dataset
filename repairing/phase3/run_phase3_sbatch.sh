@@ -1,7 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=near_phase3
 #SBATCH -A project_2016526
-#SBATCH -- nodes=1
 #SBATCH --ntasks=1
 #SBATCH -p medium
 #SBATCH --cpus-per-task=32
