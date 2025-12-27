@@ -127,9 +127,9 @@ def process_directory(args):
 
     cfg = CONFIG[target_class]
     
-    npy_files = glob.glob(os.path.join(input_dir, "*.npy"))
-    # Filter out non-refined files if mixed
-    npy_files = [f for f in npy_files if 'refined' in f]
+    npy_files = glob.glob(os.path.join(input_dir, "*_mask.npy"))
+    # Filter out non-mask files if mixed
+    npy_files = [f for f in npy_files if 'mask' in f]
     
     print(f"--- Processing Class {target_class}: {cfg['name']} ---")
     print(f"Strategy: {cfg}")
@@ -139,8 +139,8 @@ def process_directory(args):
     
     for npy_path in tqdm(npy_files):
         filename = os.path.basename(npy_path)
-        # filename format: {id}_refined.npy
-        file_id = filename.split('_refined')[0]
+        # filename format: {id}_mask.npy
+        file_id = filename.split('_mask')[0]
         
         # Load
         try:
