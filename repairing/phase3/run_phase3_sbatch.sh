@@ -1,12 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=near_phase3
-#SBATCH --account=project_2016517
-#SBATCH --partition=gpusmall
-#SBATCH --time=10:00:00
+#SBATCH --account=project_2016526
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=32G
+#SBATCH -p medium
+#SBATCH --cpus-per-task=32
+#SBATCH --time=36:00:00
 #SBATCH --output=/scratch/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/phase3/logs/phase3_%j.out
 #SBATCH --error=/scratch/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/phase3/logs/phase3_%j.err
 
