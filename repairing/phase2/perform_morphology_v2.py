@@ -98,13 +98,13 @@ def step2_cc_filtering(mask, cfg):
 def step3_per_class_special(mask, class_id):
     """Step 3: Class-specific Tricks"""
     
-    # === Myocardium Trick: Dilate -> Fill -> Erode ===
+    # === Myocardium Trick: Safe Closing ===
     if class_id == 1: 
-        # Prevent holes in Myocardium wall, but don't fill ventricle
-        dilated = binary_dilation(mask, iterations=2).astype(np.uint8)
-        filled = binary_fill_holes(dilated).astype(np.uint8)
-        eroded = binary_erosion(filled, iterations=2).astype(np.uint8)
-        return eroded
+        # Old Strategy: Dilate -> Fill -> Erode (Risky: Fills Left/Right Ventricle if wall has gaps)
+        # New Strategy: Binary Closing (r=2)
+        # This connects small gaps in the muscle wall without creating a solid block.
+        mask = binary_closing(mask, iterations=2).astype(np.uint8)
+        return mask
     
     # === Coronary Trick: Extra connection for breakpoints ===
     if class_id == 9:

@@ -29,19 +29,26 @@ CLASS_NAMES = {
     6: "Aorta", 7: "PA", 8: "LAA", 9: "Coronary", 10: "PV"
 }
 
-def load_masks(case_id, phase2_dir):
+def load_masks(case_id, data_root):
     """Load all 10 class masks for a given case_id."""
     masks = {}
     for class_id in range(1, 11):
-        class_name = CLASS_NAMES[class_id]
-        # Try finding the file
-        path1 = os.path.join(phase2_dir, f"class{class_id}_{class_name}", f"class{class_id}_{class_name}_results_256_processed", f"{case_id}_refined.npy")
-        path2 = os.path.join(phase2_dir, f"class{class_id}_{class_name}_results_256_processed", f"{case_id}_refined.npy")
+        class_name = CLASS_NAMES[class_id].lower() # unify to lowercase, e.g. 'la'
         
+        # 1. Try Phase 2 Output (_morph)
+        path1 = os.path.join(data_root, f"{class_name}_morph", f"{case_id}_mask.npy")
+        # 2. Try Phase 1 Output (_global)
+        path2 = os.path.join(data_root, f"{class_name}_global", f"{case_id}_mask.npy")
+        
+        # Legacy compatibility (optional)
+        path3 = os.path.join(data_root, f"{class_name}_global", f"{case_id}.npy")
+
         if os.path.exists(path1):
             masks[class_id] = np.load(path1)
         elif os.path.exists(path2):
             masks[class_id] = np.load(path2)
+        elif os.path.exists(path3):
+            masks[class_id] = np.load(path3)
         else:
             masks[class_id] = None 
             
@@ -166,6 +173,27 @@ def enforce_anatomical_constraints(final_mask):
     target_mask = np.logical_or(myo_mask, ao_mask).astype(np.uint8)
     final_mask = filter_floating_structures(final_mask, source_cls=9, target_mask=target_mask, max_dist=6, name="Coronary-Myo/Ao")
     
+    # Rule 1: Chamber Enclosure (Ensure Chambers are inside Myocardium + slight margin)
+    # This prevents chambers from leaking into background where Myocardium doesn't exist
+    # Only applies if Myocardium exists
+    if myo_mask.sum() > 0:
+        # Dilate Myocardium to form an envelope
+        myo_envelope = binary_dilation(myo_mask, iterations=2)
+        # Also include Aorta and PA in envelope to allow connection? 
+        # Ideally Chambers connect to Ao/PA.
+        # Let's add Ao and PA to the allowed region to be safe
+        pa_mask = get_class_mask(final_mask, 7)
+        allowed_region = np.logical_or(myo_envelope, ao_mask)
+        allowed_region = np.logical_or(allowed_region, pa_mask)
+        
+        for chamber_id in [2, 3, 4, 5]: # LA, LV, RA, RV
+            chamber_mask = get_class_mask(final_mask, chamber_id)
+            # Find chamber parts outside allowed region
+            leak = np.logical_and(chamber_mask, ~allowed_region)
+            if leak.sum() > 0:
+                final_mask[leak] = 0
+
+    
     # Rule 2: Chamber Denoising
     for cls in [2, 3, 4, 5]:
         final_mask = clean_chamber_fragments(final_mask, cls)
@@ -204,25 +232,38 @@ def process_case_worker(args):
     except Exception as e:
         return f"Error {case_id}: {e}"
 
-def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase2_dir", required=True)
+    parser.add_argument("--data_root", required=True, help="Root dataset dir containing {class}_morph or {class}_global")
     parser.add_argument("--output_dir", required=True)
     args = parser.parse_args()
     
     os.makedirs(args.output_dir, exist_ok=True)
     
-    lv_dir = os.path.join(args.phase2_dir, "class3_LV", "class3_LV_results_256_processed")
+    # Find cases from one of the class directories, e.g. LV
+    lv_dir = os.path.join(args.data_root, "lv_morph")
     if not os.path.exists(lv_dir):
-         lv_dir = os.path.join(args.phase2_dir, "class3_LV_results_256_processed")
-         
-    files = glob.glob(os.path.join(lv_dir, "*_refined.npy"))
-    case_ids = [os.path.basename(f).split('_refined')[0] for f in files]
+         lv_dir = os.path.join(args.data_root, "lv_global")
     
-    print(f"Found {len(case_ids)} cases to process.")
+    if not os.path.exists(lv_dir):
+        print(f"Error: Could not find LV directory in {args.data_root}")
+        return
+
+    files = glob.glob(os.path.join(lv_dir, "*_mask.npy"))
+    # Fallback to .npy
+    if not files:
+        files = glob.glob(os.path.join(lv_dir, "*.npy"))
+        
+    case_ids = [os.path.basename(f).split('_mask')[0] for f in files if "_mask" in f]
+    if not case_ids:
+         case_ids = [os.path.basename(f).split('.')[0] for f in files]
+    
+    # Remove duplicates
+    case_ids = sorted(list(set(case_ids)))
+    
+    print(f"Found {len(case_ids)} cases to process from {lv_dir}")
     
     # Prepare args for worker
-    tasks = [(cid, args.phase2_dir, args.output_dir) for cid in case_ids]
+    tasks = [(cid, args.data_root, args.output_dir) for cid in case_ids]
     
     # Multiprocessing
     num_workers = min(16, multiprocessing.cpu_count())
