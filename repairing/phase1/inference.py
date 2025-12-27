@@ -51,15 +51,19 @@ def create_full_grid(shape, device):
 def map_to_global(
     pred_crop: np.ndarray, 
     crop_params: dict, 
-    global_shape: tuple = (256, 256, 256)
+    global_shape: tuple = None
 ) -> np.ndarray:
     """
     Map cropped prediction back to global coordinate space.
+    If global_shape is None, uses crop_params['original_shape'].
+    If global_shape is provided and differs from original_shape, 
+    first reconstructs in original_shape then resizes.
     """
     origin = np.array(crop_params['origin'])  # [z, y, x] in original space
     original_crop_size = np.array(crop_params['size'])  # [d, h, w] before resize
+    original_full_shape = tuple(crop_params['original_shape'])
     
-    # Check if resize was applied during preprocessing
+    # Check if resize was applied during preprocessing (from orig crop to model input)
     if crop_params.get('resize_applied', False):
         zoom_factors = original_crop_size / np.array(pred_crop.shape)
         pred_original_size = zoom(pred_crop.astype(np.float32), zoom_factors, order=0)
@@ -67,15 +71,22 @@ def map_to_global(
     else:
         pred_original_size = pred_crop
     
-    # Create global volume
-    pred_global = np.zeros(global_shape, dtype=np.uint8)
+    # Reconstruct in ORIGINAL full resolution first
+    pred_global = np.zeros(original_full_shape, dtype=np.uint8)
     
     # Compute end coordinates
     end = origin + np.array(pred_original_size.shape)
     
-    # Clip to global bounds
+    # Clip to global bounds (original full shape)
     valid_start = np.maximum(origin, 0).astype(int)
-    valid_end = np.minimum(end, np.array(global_shape)).astype(int)
+    valid_end = np.minimum(end, np.array(original_full_shape)).astype(int)
+    
+    # Ensure valid range
+    valid_end = np.maximum(valid_end, valid_start)
+    
+    if np.any(valid_end - valid_start <= 0):
+        # Crop is completely outside
+        return pred_global
     
     # Compute offsets in crop space
     crop_start = (valid_start - origin).astype(int)
@@ -92,6 +103,12 @@ def map_to_global(
         crop_start[2]:crop_end[2]
     ]
     
+    # If a target global_shape is requested (e.g. 256^3) and differs from original
+    if global_shape is not None and tuple(global_shape) != original_full_shape:
+        factors = np.array(global_shape) / np.array(original_full_shape)
+        # Use order=0 for nearest neighbor (binary mask)
+        pred_global = zoom(pred_global, factors, order=0)
+        
     return pred_global
 
 
@@ -157,7 +174,7 @@ def run_inference(
             crop_params = dataset.get_crop_params(case_id)
             
             if crop_params is not None:
-                # Map to global 256³ space
+                # Map to global space (Reconstruct in Original -> Resize to Target Global)
                 mask_global = map_to_global(mask_crop, crop_params, (global_shape,)*3)
                 
                 # Save global mask (flat structure for Phase 2/3 compatibility)
