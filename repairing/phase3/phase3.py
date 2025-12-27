@@ -236,6 +236,7 @@ def process_case_worker(args):
     except Exception as e:
         return f"Error {case_id}: {e}"
 
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_root", required=True, help="Root dataset dir containing {class}_morph or {class}_global")
     parser.add_argument("--output_dir", required=True)
