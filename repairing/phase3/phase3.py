@@ -186,7 +186,11 @@ def enforce_anatomical_constraints(final_mask):
         allowed_region = np.logical_or(myo_envelope, ao_mask)
         allowed_region = np.logical_or(allowed_region, pa_mask)
         
-        for chamber_id in [2, 3, 4, 5]: # LA, LV, RA, RV
+        # FIX: Rule 1 should ONLY apply to Left Ventricle (LV).
+        # Class 1 Myocardium is typically LV Myocardium. 
+        # LA (2) and RA (4) are ABOVE it. RV (5) is BESIDE it.
+        # Enforcing them to be inside Myo would delete them.
+        for chamber_id in [3]: # LV only! 
             chamber_mask = get_class_mask(final_mask, chamber_id)
             # Find chamber parts outside allowed region
             leak = np.logical_and(chamber_mask, ~allowed_region)
