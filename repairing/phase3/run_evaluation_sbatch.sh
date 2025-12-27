@@ -4,7 +4,7 @@
 #SBATCH -p medium
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
-#SBATCH --time=4:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mem=64G
 #SBATCH --output=/scratch/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/phase3/logs/eval_%j.out
 #SBATCH --error=/scratch/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/phase3/logs/eval_%j.err
