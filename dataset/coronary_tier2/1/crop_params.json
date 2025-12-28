@@ -1,0 +1,39 @@
+{
+  "case_id": "1",
+  "target_class": "Coronary",
+  "target_id": 9,
+  "context_classes": [
+    "Myocardium",
+    "Aorta"
+  ],
+  "context_ids": [
+    1,
+    6
+  ],
+  "origin": [
+    100,
+    183,
+    16
+  ],
+  "size": [
+    318,
+    282,
+    172
+  ],
+  "original_shape": [
+    512,
+    512,
+    275
+  ],
+  "cropped_shape": [
+    128,
+    128,
+    128
+  ],
+  "resize_applied": true,
+  "target_resolution": 128,
+  "margin": 5,
+  "voxel_ratio_before": 0.0010807384144176136,
+  "voxel_ratio_after": 0.005051129803727528,
+  "ratio_improvement": 4.673776499792016
+}

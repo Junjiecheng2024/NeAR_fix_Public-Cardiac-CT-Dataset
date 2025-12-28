@@ -48,6 +48,43 @@ def create_full_grid(shape, device):
     return grid.unsqueeze(0).to(device)  # (1, D, H, W, 3)
 
 
+def create_global_chunk_grid(chunk_shape, start, end, vol_shape, device):
+    """
+    Create a sampling grid for a chunk with GLOBAL normalized coordinates.
+    
+    This is critical for sliding window inference: each chunk's grid coordinates
+    should map to their actual position in the full volume's [-1, 1] space,
+    NOT be locally normalized to [-1, 1] within the chunk.
+    
+    Args:
+        chunk_shape: (d, h, w) shape of the chunk
+        start: (z_start, y_start, x_start) starting indices in full volume
+        end: (z_end, y_end, x_end) ending indices in full volume
+        vol_shape: (D, H, W) shape of the full volume
+        device: torch device
+    
+    Returns:
+        grid: (1, d, h, w, 3) sampling grid with global normalized coordinates
+    """
+    d, h, w = chunk_shape
+    z_start, y_start, x_start = start
+    z_end, y_end, x_end = end
+    D, H, W = vol_shape
+    
+    # Convert voxel indices to global normalized coordinates [-1, 1]
+    # For a volume of size D, voxel i should map to: 2 * i / (D - 1) - 1
+    # But linspace is more elegant: create coords for the chunk's range in global space
+    
+    # Z coordinates: from z_start to z_end-1 in global [0, D-1] → [-1, 1]
+    z = torch.linspace(2 * z_start / (D - 1) - 1, 2 * (z_end - 1) / (D - 1) - 1, d)
+    y = torch.linspace(2 * y_start / (H - 1) - 1, 2 * (y_end - 1) / (H - 1) - 1, h)
+    x = torch.linspace(2 * x_start / (W - 1) - 1, 2 * (x_end - 1) / (W - 1) - 1, w)
+    
+    grid_z, grid_y, grid_x = torch.meshgrid(z, y, x, indexing='ij')
+    grid = torch.stack([grid_x, grid_y, grid_z], dim=-1)  # (d, h, w, 3), xyz order
+    return grid.unsqueeze(0).to(device)  # (1, d, h, w, 3)
+
+
 def map_to_global(
     pred_crop: np.ndarray, 
     crop_params: dict, 
@@ -197,6 +234,9 @@ def sliding_window_inference(
 ):
     """
     Sliding window inference for large volumes.
+    
+    IMPORTANT: Grid coordinates are computed in GLOBAL normalized space [-1, 1]
+    to match the training setup where the entire volume is normalized.
     """
     d, h, w = vol_shape
     
@@ -219,7 +259,17 @@ def sliding_window_inference(
                 ctx_chunk = context[:, :, z_start:z_end, y_start:y_end, x_start:x_end] if context is not None else None
                 
                 chunk_shape = (z_end - z_start, y_end - y_start, x_end - x_start)
-                grid = create_full_grid(chunk_shape, device)
+                
+                # FIX: Create grid with GLOBAL normalized coordinates
+                # Instead of normalizing each chunk to [-1, 1], we compute
+                # the chunk's position in the global [-1, 1] space
+                grid = create_global_chunk_grid(
+                    chunk_shape, 
+                    (z_start, y_start, x_start),
+                    (z_end, y_end, x_end),
+                    vol_shape,
+                    device
+                )
                 
                 # Inference on chunk
                 pred_logit, _ = model(indices, grid, app_chunk, ctx_chunk)
