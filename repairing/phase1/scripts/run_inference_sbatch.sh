@@ -92,6 +92,8 @@ echo "=============================================="
 OUTPUT_DIR=${DATA_BASE}/${CLASS_NAME}_global
 
 # Run inference at 256³ resolution with coordinate mapping to global space
+# NOTE: --no_sliding_window is required because sliding window breaks the
+# appearance-to-grid correspondence that the model learned during training
 srun apptainer exec --nv \
     -B /scratch:/scratch \
     -B /projappl:/projappl \
@@ -100,7 +102,7 @@ srun apptainer exec --nv \
     --config $CONFIG \
     --checkpoint "$CHECKPOINT" \
     --output_dir $OUTPUT_DIR \
-    --chunk_size 128 \
+    --no_sliding_window \
     --inference_resolution 256 \
     --global_shape 256
 
