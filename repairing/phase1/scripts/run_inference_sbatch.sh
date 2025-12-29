@@ -91,9 +91,10 @@ echo "=============================================="
 # Output directory for global-space predictions (256³)
 OUTPUT_DIR=${DATA_BASE}/${CLASS_NAME}_global
 
-# Run inference at 256³ resolution with coordinate mapping to global space
+# Run inference at 128³ resolution (same as training) then map to global 256³ space
 # NOTE: --no_sliding_window is required because sliding window breaks the
 # appearance-to-grid correspondence that the model learned during training
+# NOTE: Using 128³ inference to avoid GPU OOM (256³ needs ~20GB VRAM)
 srun apptainer exec --nv \
     -B /scratch:/scratch \
     -B /projappl:/projappl \
@@ -103,7 +104,7 @@ srun apptainer exec --nv \
     --checkpoint "$CHECKPOINT" \
     --output_dir $OUTPUT_DIR \
     --no_sliding_window \
-    --inference_resolution 256 \
+    --inference_resolution 128 \
     --global_shape 256
 
 echo "Inference complete for class: $CLASS_NAME"
