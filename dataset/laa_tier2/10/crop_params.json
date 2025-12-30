@@ -1,0 +1,37 @@
+{
+  "case_id": "10",
+  "target_class": "LAA",
+  "target_id": 8,
+  "context_classes": [
+    "LA"
+  ],
+  "context_ids": [
+    2
+  ],
+  "origin": [
+    209,
+    172,
+    171
+  ],
+  "size": [
+    140,
+    158,
+    93
+  ],
+  "original_shape": [
+    512,
+    512,
+    275
+  ],
+  "cropped_shape": [
+    128,
+    128,
+    128
+  ],
+  "resize_applied": true,
+  "target_resolution": 128,
+  "margin": 5,
+  "voxel_ratio_before": 0.0033652288263494316,
+  "voxel_ratio_after": 0.11792860059499505,
+  "ratio_improvement": 35.04326352835949
+}
