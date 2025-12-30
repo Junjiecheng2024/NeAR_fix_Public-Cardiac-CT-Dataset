@@ -36,7 +36,7 @@ def get_surface_distance(mask1, mask2, spacing=(1.0, 1.0, 1.0)):
     border2 = mask2 ^ binary_erosion(mask2)
     
     if border1.sum() == 0 or border2.sum() == 0:
-        return np.nan, np.nan, np.nan, np.nan
+        return np.nan, np.nan
         
     # EDT
     dt1 = distance_transform_edt(~border1, sampling=spacing)
