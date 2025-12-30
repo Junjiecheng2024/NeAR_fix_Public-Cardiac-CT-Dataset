@@ -109,7 +109,9 @@ def compute_metrics(pred, gt, spacing=(1,1,1)):
             hd95, asd = get_surface_distance(pred, gt, spacing)
             metrics['hd95'] = hd95
             metrics['asd'] = asd
-        except:
+        except Exception as e:
+            # Print error for debugging
+            print(f"[HD95 Error] {e}")
             metrics['hd95'] = np.nan
             metrics['asd'] = np.nan
     else:
