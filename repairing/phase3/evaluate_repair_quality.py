@@ -31,6 +31,13 @@ def get_surface_distance(mask1, mask2, spacing=(1.0, 1.0, 1.0)):
     """
     Compute Surface Distances using EDT.
     """
+    # Ensure masks are 3D boolean arrays
+    mask1 = np.asarray(mask1, dtype=bool)
+    mask2 = np.asarray(mask2, dtype=bool)
+    
+    # Ensure spacing is a tuple of 3 floats
+    spacing = (float(spacing[0]), float(spacing[1]), float(spacing[2]))
+    
     # Extract surfaces
     border1 = mask1 ^ binary_erosion(mask1)
     border2 = mask2 ^ binary_erosion(mask2)
@@ -38,7 +45,7 @@ def get_surface_distance(mask1, mask2, spacing=(1.0, 1.0, 1.0)):
     if border1.sum() == 0 or border2.sum() == 0:
         return np.nan, np.nan
         
-    # EDT
+    # EDT - explicitly convert to prevent broadcasting issues
     dt1 = distance_transform_edt(~border1, sampling=spacing)
     dt2 = distance_transform_edt(~border2, sampling=spacing)
     
