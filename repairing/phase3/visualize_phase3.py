@@ -54,28 +54,30 @@ def visualize_case(case_id, s3_path, gt_path, img_path, output_dir):
         print(f"Error loading masks for {case_id}")
         return
 
+    # Resize Phase3 mask (256³) to match GT resolution
+    if s3_mask.shape != gt_mask.shape:
+        zoom_factors = np.array(gt_mask.shape) / np.array(s3_mask.shape)
+        s3_mask = zoom(s3_mask, zoom_factors, order=0)  # Nearest neighbor for labels
+    
     # Handle CT Image
     if ct_img is None:
         print(f"Warning: CT image not found for {case_id}, using blank")
-        ct_img = np.zeros_like(s3_mask)
-    else:
-        # Orientation fix based on inference_and_evaluate.py
-        # Image is likely (X, Y, Z), Mask is (Z, Y, X)
-        if ct_img.ndim == 3 and ct_img.shape == s3_mask.shape:
-             # Heuristic: Check if transpose improves correlation? 
-             # Or just trust the previous script's logic: transpose(2, 1, 0)
-             # Let's try to be robust.
-             pass
-        
-        # If CT is (X, Y, Z) and Mask is (Z, Y, X), we need to transpose CT to (Z, Y, X)
-        # Standard medical imaging often has Z as first dim in python if loaded from NIfTI, 
-        # but .npy might be saved differently.
-        # Let's assume the previous script was correct and transpose CT.
-        ct_img = ct_img.transpose(2, 1, 0)
+        ct_img = np.zeros_like(gt_mask)
+    
+    # Make sure all three have the same shape
+    target_shape = gt_mask.shape
+    
+    if ct_img.shape != target_shape:
+        # Try transpose first (common orientation issue)
+        if ct_img.shape == target_shape[::-1]:
+            ct_img = ct_img.transpose(2, 1, 0)
+        else:
+            # Resize CT
+            zoom_factors = np.array(target_shape) / np.array(ct_img.shape)
+            ct_img = zoom(ct_img, zoom_factors, order=1)
 
-    # Find best slice (Max Area in S3 mask)
-    # We focus on Axial (Z) slices as they are standard for CT
-    axis = 0 # Z-axis
+    # Find best slice (Max Area in Phase3 mask)
+    axis = 0  # Z-axis
     area_per_slice = np.sum(s3_mask > 0, axis=(1, 2))
     slice_idx = np.argmax(area_per_slice)
     
