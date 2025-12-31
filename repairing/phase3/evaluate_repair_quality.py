@@ -29,14 +29,16 @@ CLASS_NAMES = {
 
 def get_surface_distance(mask1, mask2, spacing=(1.0, 1.0, 1.0)):
     """
-    Compute Surface Distances using EDT.
+    Compute Surface Distances using KDTree (faster than EDT for large volumes).
     """
+    from scipy.spatial import cKDTree
+    
     # Ensure masks are 3D boolean arrays
     mask1 = np.asarray(mask1, dtype=bool)
     mask2 = np.asarray(mask2, dtype=bool)
     
     # Ensure spacing is a tuple of 3 floats
-    spacing = (float(spacing[0]), float(spacing[1]), float(spacing[2]))
+    spacing = np.array([float(spacing[0]), float(spacing[1]), float(spacing[2])])
     
     # Extract surfaces
     border1 = mask1 ^ binary_erosion(mask1)
@@ -44,15 +46,19 @@ def get_surface_distance(mask1, mask2, spacing=(1.0, 1.0, 1.0)):
     
     if border1.sum() == 0 or border2.sum() == 0:
         return np.nan, np.nan
-        
-    # EDT - explicitly convert to prevent broadcasting issues
-    dt1 = distance_transform_edt(~border1, sampling=spacing)
-    dt2 = distance_transform_edt(~border2, sampling=spacing)
     
-    # Dists from 1 to 2
-    d1_to_2 = dt2[border1]
-    # Dists from 2 to 1
-    d2_to_1 = dt1[border2]
+    # Get surface point coordinates
+    coords1 = np.array(np.where(border1)).T * spacing  # (N, 3)
+    coords2 = np.array(np.where(border2)).T * spacing  # (M, 3)
+    
+    # Build KDTree for fast nearest neighbor search
+    tree1 = cKDTree(coords1)
+    tree2 = cKDTree(coords2)
+    
+    # Distances from surface1 to surface2
+    d1_to_2, _ = tree2.query(coords1)
+    # Distances from surface2 to surface1  
+    d2_to_1, _ = tree1.query(coords2)
     
     all_dists = np.concatenate([d1_to_2, d2_to_1])
     
