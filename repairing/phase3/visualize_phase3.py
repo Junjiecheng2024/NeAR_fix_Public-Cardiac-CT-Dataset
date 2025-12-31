@@ -130,32 +130,68 @@ def visualize_case(case_id, s3_path, gt_path, img_path, output_dir):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase3_dir", required=True)
-    parser.add_argument("--gt_dir", required=True)
-    parser.add_argument("--img_dir", required=True, help="Directory containing CT images")
+    parser.add_argument("--data_root", type=str, 
+                        default="/scratch/project_2016517/JunjieCheng/dataset",
+                        help="Root directory of dataset")
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--num_samples", type=int, default=20)
     args = parser.parse_args()
     
     os.makedirs(args.output_dir, exist_ok=True)
     
-    files = [f for f in os.listdir(args.phase3_dir) if f.endswith('.npy')]
-    case_ids = [f.split('_phase3')[0] for f in files]
+    phase3_dir = os.path.join(args.data_root, "repaired_phase3")
+    gt_dir = os.path.join(args.data_root, "original", "segmentations")
+    img_dir = os.path.join(args.data_root, "original", "images")
+    
+    # Find Phase3 files
+    files = [f for f in os.listdir(phase3_dir) if f.endswith('.npy') or f.endswith('.nii.gz')]
+    case_ids = []
+    for f in files:
+        if '_phase3' in f:
+            case_ids.append(f.split('_phase3')[0])
+        else:
+            case_ids.append(f.split('.')[0])
+    case_ids = list(set(case_ids))
     
     # Randomly select samples
     selected_cases = random.sample(case_ids, min(len(case_ids), args.num_samples))
     selected_cases.sort()
     
     print(f"Generating overlay visualizations for {len(selected_cases)} cases...")
+    print(f"Phase3 dir: {phase3_dir}")
+    print(f"GT dir: {gt_dir}")
+    print(f"Image dir: {img_dir}")
     
     for case_id in tqdm(selected_cases):
-        s3_path = os.path.join(args.phase3_dir, f"{case_id}_phase3.npy")
-        gt_path = os.path.join(args.gt_dir, f"{case_id}.npy")
-        img_path = os.path.join(args.img_dir, f"{case_id}.npy")
+        # Phase 3 mask
+        s3_candidates = [
+            os.path.join(phase3_dir, f"{case_id}_phase3.npy"),
+            os.path.join(phase3_dir, f"{case_id}_phase3.nii.gz"),
+        ]
+        s3_path = next((p for p in s3_candidates if os.path.exists(p)), None)
         
-        visualize_case(case_id, s3_path, gt_path, img_path, args.output_dir)
+        # GT mask
+        gt_candidates = [
+            os.path.join(gt_dir, f"{case_id}.nii.img.nii.gz"),
+            os.path.join(gt_dir, f"{case_id}.nii.gz"),
+        ]
+        gt_path = next((p for p in gt_candidates if os.path.exists(p)), None)
+        
+        # CT image
+        img_candidates = [
+            os.path.join(img_dir, f"{case_id}.nii.img.nii.gz"),
+            os.path.join(img_dir, f"{case_id}.nii.gz"),
+            os.path.join(img_dir, f"{case_id}.npy"),
+        ]
+        img_path = next((p for p in img_candidates if os.path.exists(p)), None)
+        
+        if s3_path and gt_path:
+            visualize_case(case_id, s3_path, gt_path, img_path, args.output_dir)
+        else:
+            print(f"Skipping {case_id}: missing files")
         
     print(f"Done. Visualizations saved to {args.output_dir}")
 
 if __name__ == "__main__":
     main()
+

@@ -233,17 +233,11 @@ def plot_single_class_comparison(orig_mask, case_id, class_id, output_path, phas
 
 def main():
     parser = argparse.ArgumentParser(description='3D Visualization of Repair Results')
-    parser.add_argument('--case_ids', type=str, default='24,327,75,655,229,637,201',
-                        help='Comma-separated case IDs to visualize, e.g., "24,327,75"')
-    parser.add_argument('--orig_dir', type=str, 
-                        default='/scratch/project_2016517/junjie/dataset/near_format_data/shape',
-                        help='Directory containing original segmentation masks (256 format)')
-    parser.add_argument('--phase1_dir', type=str,
-                        default='/projappl/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/repairing/phase2',
-                        help='Directory containing phase1/2 class outputs')
-    parser.add_argument('--phase3_dir', type=str, 
-                        default='/scratch/project_2016517/junjie/dataset/repaired_shape',
-                        help='Directory containing phase3 output masks')
+    parser.add_argument('--case_ids', type=str, default='1,10,100',
+                        help='Comma-separated case IDs to visualize, e.g., "1,10,100"')
+    parser.add_argument('--data_root', type=str, 
+                        default='/scratch/project_2016517/JunjieCheng/dataset',
+                        help='Root directory of dataset')
     parser.add_argument('--output_dir', type=str, default='./vis_3d',
                         help='Output directory for visualizations')
     parser.add_argument('--classes', type=str, default='8,9,10',
@@ -254,94 +248,65 @@ def main():
     
     os.makedirs(args.output_dir, exist_ok=True)
     
-    case_ids = [int(x.strip()) for x in args.case_ids.split(',')]
-    classes = [int(x.strip()) for x in args.classes.split(',')]  # 总图用的类
-    single_classes = [int(x.strip()) for x in args.single_classes.split(',')]  # 单类图用的类
+    case_ids = [x.strip() for x in args.case_ids.split(',')]
+    classes = [int(x.strip()) for x in args.classes.split(',')]
+    single_classes = [int(x.strip()) for x in args.single_classes.split(',')]
     
-    orig_dir = Path(args.orig_dir)
-    phase1_dir = Path(args.phase1_dir)
-    phase3_dir = Path(args.phase3_dir)
+    data_root = Path(args.data_root)
+    gt_dir = data_root / "original" / "segmentations"
     
     print(f"Generating 3D visualizations for cases: {case_ids}")
     print(f"Classes to show: {[CLASS_NAMES.get(c, c) for c in classes]}")
-    print(f"Original dir: {orig_dir}")
-    print(f"Phase1 dir: {phase1_dir}")
-    print(f"Phase3 dir: {phase3_dir}")
+    print(f"Data root: {data_root}")
     
     for case_id in case_ids:
         print(f"\nProcessing Case {case_id}...")
         
-        # 原始分割路径 - near_format_data是.npy格式
-        orig_paths = [
-            orig_dir / f"{case_id}.npy",
-            orig_dir / f"{case_id}_label.npy",
-            orig_dir / f"{case_id}.nii.gz",
+        # Load Ground Truth (Original segmentation)
+        gt_paths = [
+            gt_dir / f"{case_id}.nii.img.nii.gz",
+            gt_dir / f"{case_id}.nii.gz",
         ]
         
-        # Phase3输出路径 - 注释掉
-        # phase3_paths = [
-        #     phase3_dir / f"{case_id}.nii.img.nii.gz",
-        #     phase3_dir / f"{case_id}.nii.gz",
-        #     phase3_dir / f"{case_id}.npy",
-        # ]
-        
         orig_mask = None
-        # phase3_mask = None
-        
-        for p in orig_paths:
+        for p in gt_paths:
             if p.exists():
                 orig_mask = load_mask(str(p))
-                print(f"  Loaded original: {p}")
+                print(f"  Loaded GT: {p}")
                 break
         
-        # for p in phase3_paths:
-        #     if p.exists():
-        #         phase3_mask = load_mask(str(p))
-        #         print(f"  Loaded phase3: {p}")
-        #         break
-        
         if orig_mask is None:
-            print(f"  Warning: Original mask not found for case {case_id}")
+            print(f"  Warning: GT not found for case {case_id}")
             continue
-        # if phase3_mask is None:
-        #     print(f"  Warning: Phase3 mask not found for case {case_id}")
-        #     continue
         
-        # 加载Phase1单类别输出 
+        # Load Phase1 masks for each class
         phase1_masks = {}
-        all_class_ids = list(set(classes + single_classes))  # 合并需要加载的类
-        dataset_base = Path("/scratch/project_2016517/JunjieCheng/dataset")
+        all_class_ids = list(set(classes + single_classes))
         
         for class_id in all_class_ids:
             class_name = CLASS_NAMES.get(class_id, f'Class{class_id}').lower()
             
-            # 尝试多种路径 
             p1_paths = [
-                # 1. 新的全局输出路径 (dataset/{class}_global/{case_id}_mask.npy)
-                dataset_base / f"{class_name}_global" / f"{case_id}_mask.npy",
-                dataset_base / f"{class_name}_global" / f"{case_id}.npy",
-                
-                # 2. 兼容旧路径
-                # phase1_dir / class_dir_name / f"{class_dir_name}_results_256" / f"{case_id}.npy",
+                data_root / f"{class_name}_global" / f"{case_id}_mask.npy",
+                data_root / f"{class_name}_morph" / f"{case_id}_mask.npy",
             ]
             
             for p in p1_paths:
                 if p.exists():
                     phase1_masks[class_id] = load_mask(str(p))
-                    print(f"  Loaded Phase1 {class_name}: {p}")
+                    print(f"  Loaded Phase1 {class_name}: {p.name}")
                     break
         
-        # 生成对比图 (Original -> Phase1)
+        # Generate comparison figure (GT -> Phase1)
         output_path = os.path.join(args.output_dir, f"case_{case_id}_comparison.png")
         plot_3d_comparison(orig_mask, case_id, output_path, classes, 
                           phase1_masks=phase1_masks)
         
-        # 为每个类别生成单独的详细对比图
+        # Generate single-class comparison for each class
         for class_id in single_classes:
             class_name = CLASS_NAMES.get(class_id, f'Class{class_id}')
             output_path = os.path.join(args.output_dir, 
                                        f"case_{case_id}_{class_name}_3d.png")
-            # 获取该类别的Phase1 mask
             p1_mask = phase1_masks.get(class_id, None)
             plot_single_class_comparison(orig_mask, case_id, class_id, 
                                         output_path, phase1_mask=p1_mask)
@@ -350,3 +315,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
