@@ -173,29 +173,20 @@ def enforce_anatomical_constraints(final_mask):
     target_mask = np.logical_or(myo_mask, ao_mask).astype(np.uint8)
     final_mask = filter_floating_structures(final_mask, source_cls=9, target_mask=target_mask, max_dist=6, name="Coronary-Myo/Ao")
     
-    # Rule 1: Chamber Enclosure (Ensure Chambers are inside Myocardium + slight margin)
-    # This prevents chambers from leaking into background where Myocardium doesn't exist
-    # Only applies if Myocardium exists
-    if myo_mask.sum() > 0:
-        # Dilate Myocardium to form an envelope
-        myo_envelope = binary_dilation(myo_mask, iterations=2)
-        # Also include Aorta and PA in envelope to allow connection? 
-        # Ideally Chambers connect to Ao/PA.
-        # Let's add Ao and PA to the allowed region to be safe
-        pa_mask = get_class_mask(final_mask, 7)
-        allowed_region = np.logical_or(myo_envelope, ao_mask)
-        allowed_region = np.logical_or(allowed_region, pa_mask)
-        
-        # FIX: Rule 1 should ONLY apply to Left Ventricle (LV).
-        # Class 1 Myocardium is typically LV Myocardium. 
-        # LA (2) and RA (4) are ABOVE it. RV (5) is BESIDE it.
-        # Enforcing them to be inside Myo would delete them.
-        for chamber_id in [3]: # LV only! 
-            chamber_mask = get_class_mask(final_mask, chamber_id)
-            # Find chamber parts outside allowed region
-            leak = np.logical_and(chamber_mask, ~allowed_region)
-            if leak.sum() > 0:
-                final_mask[leak] = 0
+    # Rule 1: Chamber Enclosure - DISABLED
+    # 原因：Phase 1 已经有很高的 Dice (0.99)，这个规则反而会破坏 LV
+    # 如果 Myocardium 预测不完整，会错误删除正确的 LV 预测
+    # if myo_mask.sum() > 0:
+    #     myo_envelope = binary_dilation(myo_mask, iterations=2)
+    #     pa_mask = get_class_mask(final_mask, 7)
+    #     allowed_region = np.logical_or(myo_envelope, ao_mask)
+    #     allowed_region = np.logical_or(allowed_region, pa_mask)
+    #     for chamber_id in [3]:
+    #         chamber_mask = get_class_mask(final_mask, chamber_id)
+    #         leak = np.logical_and(chamber_mask, ~allowed_region)
+    #         if leak.sum() > 0:
+    #             final_mask[leak] = 0
+
 
     
     # Rule 2: Chamber Denoising
