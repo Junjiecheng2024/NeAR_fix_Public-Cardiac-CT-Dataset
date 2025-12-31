@@ -40,41 +40,50 @@ def load_ct_256(ct_path):
     ct = (ct - ct.min()) / (ct.max() - ct.min() + 1e-8)
     return ct
 
-def refine_mask_with_ct(mask, ct, iterations=50, smoothing=1):
+def refine_mask_with_ct(mask, ct, iterations=50, smoothing=1, band_width=5):
     """
     使用 Morphological Chan-Vese 活动轮廓优化 mask 边界
-    
-    Chan-Vese 模型不依赖边缘，而是基于区域的灰度均值来分割。
-    它会让边界自动移动到使"前景均值"和"背景均值"差异最大的位置。
     
     Args:
         mask: 初始分割 (256, 256, 256) binary
         ct: CT 图像 (256, 256, 256) float [0, 1]
         iterations: 演化迭代次数
         smoothing: 边界平滑程度
+        band_width: 只在原始边界 ±N 像素范围内优化
     
     Returns:
         refined_mask: 优化后的分割
     """
-    # 为了速度，先降采样到 128³ 处理，再上采样回来
+    from scipy.ndimage import binary_dilation, binary_erosion, distance_transform_edt
+    
+    # 为了速度，先降采样到 128³ 处理
     mask_128 = zoom(mask.astype(float), 0.5, order=0) > 0.5
     ct_128 = zoom(ct, 0.5, order=1)
+    
+    # 创建窄带区域：只在原始边界 ±band_width 像素内进行优化
+    inner = binary_erosion(mask_128, iterations=band_width)
+    outer = binary_dilation(mask_128, iterations=band_width)
+    band = outer & ~inner  # 边界带
     
     # 应用轻微高斯模糊减少噪声
     ct_smooth = gaussian_filter(ct_128, sigma=1)
     
-    # Morphological Chan-Vese
+    # Morphological Chan-Vese (只在边界带内运行)
     refined_128 = morphological_chan_vese(
         ct_smooth, 
         num_iter=iterations,
         init_level_set=mask_128.astype(float),
         smoothing=smoothing,
-        lambda1=1,  # 前景权重
-        lambda2=1   # 背景权重
+        lambda1=1,
+        lambda2=1
     )
     
+    # 关键：限制结果只在窄带内变化
+    # 窄带内用 chan-vese 结果，窄带外保持原样
+    final_128 = np.where(band, refined_128, mask_128)
+    
     # 上采样回 256³
-    refined = zoom(refined_128.astype(float), 2, order=0) > 0.5
+    refined = zoom(final_128.astype(float), 2, order=0) > 0.5
     
     return refined.astype(np.uint8)
 
