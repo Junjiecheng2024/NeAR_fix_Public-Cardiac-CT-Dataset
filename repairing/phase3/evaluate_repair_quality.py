@@ -204,6 +204,9 @@ def process_case(args_tuple):
                  mask_gt = zoom(mask_gt, zoom_fac, order=0)
                  mask_gt = (mask_gt > 0.5).astype(np.uint8)
             
+            # --- Compute GT CC ---
+            _, gt_cc = cc3d.connected_components(mask_gt, connectivity=26, return_N=True)
+            
             # --- Metrics: P1 vs GT (Inference) ---
             m_p1 = compute_metrics(mask_p1, mask_gt, spacing)
             
@@ -249,6 +252,12 @@ def process_case(args_tuple):
                 'p3_dice': m_p3['dice'],
                 'p3_hd95': m_p3['hd95'],
                 'p3_asd': m_p3['asd'],
+                
+                # GT CC (between p3_hd95 and p1_cc as requested)
+                'gt_cc': gt_cc,
+                
+                'p1_cc': m_p1['cc_pred'],
+                'p2_cc': m_p2['cc_pred'],
                 'p3_cc': m_p3['cc_pred'],
                 'p3_vol': m_p3['vol_pred'],
                 
@@ -332,7 +341,7 @@ def main():
         summary = df.groupby(['class_id', 'class_name'])[[
             'p1_dice', 'p2_dice', 'p3_dice', 
             'p1_hd95', 'p2_hd95', 'p3_hd95',
-            'p1_cc', 'p2_cc', 'p3_cc',
+            'gt_cc', 'p1_cc', 'p2_cc', 'p3_cc',
             'p2_vol_change', 'p3_vol_change'
         ]].mean().reset_index()
         
