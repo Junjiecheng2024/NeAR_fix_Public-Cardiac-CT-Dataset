@@ -31,6 +31,7 @@ srun apptainer exec \
     python repairing/phase3/evaluate_repair_quality.py \
     --data_root $DATA_ROOT \
     --gt_root $GT_ROOT \
-    --output_csv $PROJDIR/repairing/phase3/evaluation_results_full.csv
+    --output_csv $PROJDIR/repairing/phase3/evaluation_results_full.csv \
+    --skip_hd95
 
 echo "Evaluation Complete."

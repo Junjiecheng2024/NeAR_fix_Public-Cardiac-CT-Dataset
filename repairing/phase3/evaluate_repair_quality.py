@@ -117,7 +117,12 @@ def compute_metrics(pred, gt, spacing=(1,1,1)):
     
     # 4. Surface Metrics (HD95, ASD)
     # Only compute if volumes are not too tiny to avoid errors
-    if pred.sum() > 0 and gt.sum() > 0:
+    # Check global SKIP_HD95 flag
+    skip_hd = globals().get('SKIP_HD95', False)
+    if skip_hd:
+        metrics['hd95'] = np.nan
+        metrics['asd'] = np.nan
+    elif pred.sum() > 0 and gt.sum() > 0:
         try:
             hd95, asd = get_surface_distance(pred, gt, spacing)
             metrics['hd95'] = hd95
@@ -260,7 +265,14 @@ def main():
     parser.add_argument("--data_root", required=True, help="Root of dataset e.g. /scratch/.../dataset")
     parser.add_argument("--gt_root", required=True, help="Folder containing original GT .nii.gz")
     parser.add_argument("--output_csv", required=True)
+    parser.add_argument("--skip_hd95", action="store_true", help="Skip HD95/ASD calculation for faster evaluation")
     args = parser.parse_args()
+    
+    # Set global flag for HD95 skip
+    global SKIP_HD95
+    SKIP_HD95 = args.skip_hd95
+    if SKIP_HD95:
+        print("NOTE: Skipping HD95/ASD calculation for faster evaluation")
     
     # Discover cases
     # Look in repaired_phase3

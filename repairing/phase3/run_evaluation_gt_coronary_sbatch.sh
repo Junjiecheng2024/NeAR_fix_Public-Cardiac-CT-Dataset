@@ -54,7 +54,8 @@ srun apptainer exec \
     python repairing/phase3/evaluate_repair_quality.py \
     --data_root $DATA_ROOT \
     --gt_root $GT_ROOT \
-    --output_csv $PROJDIR/repairing/phase3/evaluation_gt_coronary.csv
+    --output_csv $PROJDIR/repairing/phase3/evaluation_gt_coronary.csv \
+    --skip_hd95
 
 # Restore original
 cd $DATA_ROOT
