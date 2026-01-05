@@ -55,7 +55,8 @@ srun apptainer exec \
     --data_root $DATA_ROOT \
     --gt_root $GT_ROOT \
     --output_csv $PROJDIR/repairing/phase3/evaluation_gt_coronary.csv \
-    --skip_hd95
+    --skip_hd95 \
+    --use_gt_coronary
 
 # Restore original
 cd $DATA_ROOT

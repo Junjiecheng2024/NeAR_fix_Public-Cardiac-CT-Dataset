@@ -172,7 +172,12 @@ def process_case(args_tuple):
             mask_p3 = (p3_data == cls_id).astype(np.uint8)
             
             # Phase 1: Global Inference Output
-            p1_path = os.path.join(data_root, f"{cls_lower}_global", f"{case_id}_mask.npy")
+            # Use GT coronary directories if flag is set
+            use_gt = globals().get('USE_GT_CORONARY', False)
+            if cls_id == 9 and use_gt:  # Coronary
+                p1_path = os.path.join(data_root, "coronary_global_gt", f"{case_id}_mask.npy")
+            else:
+                p1_path = os.path.join(data_root, f"{cls_lower}_global", f"{case_id}_mask.npy")
             if os.path.exists(p1_path):
                 mask_p1 = np.load(p1_path)
                 mask_p1 = (mask_p1 > 0.5).astype(np.uint8)
@@ -180,7 +185,10 @@ def process_case(args_tuple):
                 mask_p1 = np.zeros((256, 256, 256), dtype=np.uint8)
 
             # Phase 2: Morphology Output
-            p2_path = os.path.join(data_root, f"{cls_lower}_morph", f"{case_id}_mask.npy")
+            if cls_id == 9 and use_gt:  # Coronary
+                p2_path = os.path.join(data_root, "coronary_morph_gt", f"{case_id}_mask.npy")
+            else:
+                p2_path = os.path.join(data_root, f"{cls_lower}_morph", f"{case_id}_mask.npy")
             if os.path.exists(p2_path):
                 mask_p2 = np.load(p2_path)
                 mask_p2 = (mask_p2 > 0.5).astype(np.uint8)
@@ -266,13 +274,17 @@ def main():
     parser.add_argument("--gt_root", required=True, help="Folder containing original GT .nii.gz")
     parser.add_argument("--output_csv", required=True)
     parser.add_argument("--skip_hd95", action="store_true", help="Skip HD95/ASD calculation for faster evaluation")
+    parser.add_argument("--use_gt_coronary", action="store_true", help="Use GT coronary directories for P1/P2 (coronary_global_gt, coronary_morph_gt)")
     args = parser.parse_args()
     
-    # Set global flag for HD95 skip
-    global SKIP_HD95
+    # Set global flags
+    global SKIP_HD95, USE_GT_CORONARY
     SKIP_HD95 = args.skip_hd95
+    USE_GT_CORONARY = args.use_gt_coronary
     if SKIP_HD95:
         print("NOTE: Skipping HD95/ASD calculation for faster evaluation")
+    if USE_GT_CORONARY:
+        print("NOTE: Using GT coronary directories (coronary_global_gt, coronary_morph_gt)")
     
     # Discover cases
     # Look in repaired_phase3
