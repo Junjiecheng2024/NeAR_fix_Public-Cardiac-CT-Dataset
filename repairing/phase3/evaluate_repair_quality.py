@@ -350,6 +350,41 @@ def main():
         summary.to_csv(summary_file, index=False)
         print(f"\nFull results saved to {args.output_csv}")
         print(f"Summary saved to {summary_file}")
+        
+        # === Worst Cases Analysis ===
+        print("\n" + "="*80)
+        print("=== Worst Cases by Class (Top 10) ===")
+        print("="*80)
+        
+        for cls_id in range(1, 11):
+            cls_name = CLASS_NAMES[cls_id]
+            cls_df = df[df['class_id'] == cls_id].copy()
+            
+            if cls_df.empty:
+                continue
+                
+            print(f"\n--- {cls_name} (Class {cls_id}) ---")
+            
+            # 1. Lowest Dice (worst)
+            worst_dice = cls_df.nsmallest(10, 'p3_dice')[['case_id', 'p3_dice']]
+            dice_ids = worst_dice['case_id'].tolist()
+            print(f"  Lowest P3 Dice: {dice_ids}")
+            
+            # 2. Highest HD95 (worst) - filter out NaN
+            hd95_df = cls_df[cls_df['p3_hd95'].notna()]
+            if not hd95_df.empty:
+                worst_hd95 = hd95_df.nlargest(10, 'p3_hd95')[['case_id', 'p3_hd95']]
+                hd95_ids = worst_hd95['case_id'].tolist()
+                print(f"  Highest P3 HD95: {hd95_ids}")
+            else:
+                print(f"  Highest P3 HD95: (no valid data)")
+            
+            # 3. Most CCs (worst)
+            worst_cc = cls_df.nlargest(10, 'p3_cc')[['case_id', 'p3_cc']]
+            cc_ids = worst_cc['case_id'].tolist()
+            print(f"  Most P3 CCs: {cc_ids}")
+        
+        print("\n" + "="*80)
 
 if __name__ == "__main__":
     main()
