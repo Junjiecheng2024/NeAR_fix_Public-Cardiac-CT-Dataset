@@ -2,6 +2,15 @@
 
 This repository vendors a small amount of third-party source code.
 
+## External dataset source: `Bjonze/Public-Cardiac-CT-Dataset`
+
+- Source: <https://github.com/Bjonze/Public-Cardiac-CT-Dataset>
+- Role here: external dataset source used by this project
+- Associated publication: "A Public Cardiac CT Dataset Featuring the Left Atrial Appendage" (STACOM 2025 MICCAI workshop)
+
+This repository uses data derived from that public cardiac CT dataset.
+Please acknowledge and cite the original dataset paper and repository when describing or redistributing work based on those data.
+
 ## `HINTLab/NeAR`
 
 - Source: <https://github.com/HINTLab/NeAR>

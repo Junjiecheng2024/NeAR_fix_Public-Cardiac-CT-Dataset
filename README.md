@@ -56,6 +56,17 @@ By default, scripts assume data lives under:
 
 If `NEAR_DATA_ROOT` is not set, the code defaults to `./dataset` relative to the repository root.
 
+## Dataset Acknowledgment
+
+This project uses data derived from the Public Cardiac CT Dataset repository by Bjonze:
+<https://github.com/Bjonze/Public-Cardiac-CT-Dataset>
+
+That repository accompanies the article:
+"A Public Cardiac CT Dataset Featuring the Left Atrial Appendage"
+(STACOM 2025 MICCAI workshop).
+
+If you use this project or the underlying dataset in academic work, please also cite the original dataset paper and repository.
+
 ## Environment
 
 This repository is still research code.
