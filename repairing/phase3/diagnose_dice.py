@@ -20,7 +20,7 @@ def compute_dice(pred, gt):
     return 2 * intersection / (pred.sum() + gt.sum() + 1e-8)
 
 def main():
-    case_id = "1"
+    case_id = "214"
     
     # Load GT
     gt_path = os.path.join(GT_ROOT, f"{case_id}.nii.img.nii.gz")
