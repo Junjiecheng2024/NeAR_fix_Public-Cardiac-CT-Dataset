@@ -14,13 +14,13 @@ from scipy.ndimage import binary_dilation, binary_erosion
 
 class CoronaryTier2Dataset(Dataset):
     """
-    Dataset for Coronary refinement with Shape + Appearance.
+    Dataset for Tier2 single-class refinement with Shape + Appearance.
     
     Data structure expected (per case):
     root/
         case_001/
             ct.npy              # Normalized CT (D, H, W), range [0, 1]
-            mask_coronary.npy   # Binary mask for coronary (D, H, W)
+            mask_target.npy     # Binary mask for the target class (D, H, W)
             mask_context.npy    # Binary mask for context (Myo + Aorta)
             crop_params.json    # Crop parameters for coordinate mapping
         case_002/

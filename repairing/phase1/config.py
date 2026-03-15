@@ -2,8 +2,22 @@
 NeAR v2.0 Phase1 Configuration System
 Uses class inheritance for different cardiac classes.
 """
+import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Optional
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_DATA_ROOT = Path(os.environ.get("NEAR_DATA_ROOT", REPO_ROOT / "dataset"))
+DEFAULT_OUTPUT_ROOT = Path(os.environ.get("NEAR_OUTPUT_ROOT", REPO_ROOT / "outputs"))
+DEFAULT_PHASE1_CHECKPOINT_ROOT = Path(
+    os.environ.get("NEAR_PHASE1_CHECKPOINT_ROOT", DEFAULT_OUTPUT_ROOT / "phase1" / "checkpoints")
+)
+
+
+def default_class_data_path(class_dir: str) -> str:
+    return str(DEFAULT_DATA_ROOT / class_dir)
 
 
 @dataclass
@@ -11,7 +25,7 @@ class BaseConfig:
     """Base configuration for Phase1 training."""
     
     # Paths (to be overridden per class)
-    base_path: str = "/scratch/project_2016517/JunjieCheng/NeAR_fix_Public-Cardiac-CT-Dataset/phase1/checkpoints"
+    base_path: str = str(DEFAULT_PHASE1_CHECKPOINT_ROOT)
     run_flag: str = "Phase1_"
     data_path: str = ""
     
@@ -82,7 +96,7 @@ class CoronaryConfig(BaseConfig):
     class_name: str = "Coronary"
     class_index: int = 9
     run_flag: str = "Coronary_Tier2_"
-    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/coronary_tier2"
+    data_path: str = default_class_data_path("coronary_tier2")
     
     # Coronary-specific: longer training
     n_epochs: int = 600
@@ -94,7 +108,7 @@ class AortaConfig(BaseConfig):
     class_name: str = "Aorta"
     class_index: int = 6
     run_flag: str = "Aorta_Tier2_"
-    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/aorta_tier2"
+    data_path: str = default_class_data_path("aorta_tier2")
     
     # Aorta: simpler structure
     n_epochs: int = 400
@@ -107,7 +121,7 @@ class MyocardiumConfig(BaseConfig):
     class_name: str = "Myocardium"
     class_index: int = 1
     run_flag: str = "Myocardium_Tier2_"
-    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/myocardium_tier2"
+    data_path: str = default_class_data_path("myocardium_tier2")
     n_epochs: int = 400
     boundary_dice_weight: float = 0.15
 
@@ -118,7 +132,7 @@ class LAConfig(BaseConfig):
     class_name: str = "LA"
     class_index: int = 2
     run_flag: str = "LA_Tier2_"
-    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/la_tier2"
+    data_path: str = default_class_data_path("la_tier2")
     n_epochs: int = 400
 
 
@@ -128,7 +142,7 @@ class LVConfig(BaseConfig):
     class_name: str = "LV"
     class_index: int = 3
     run_flag: str = "LV_Tier2_"
-    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/lv_tier2"
+    data_path: str = default_class_data_path("lv_tier2")
     n_epochs: int = 400
 
 
@@ -138,7 +152,7 @@ class RAConfig(BaseConfig):
     class_name: str = "RA"
     class_index: int = 4
     run_flag: str = "RA_Tier2_"
-    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/ra_tier2"
+    data_path: str = default_class_data_path("ra_tier2")
     n_epochs: int = 400
 
 
@@ -148,7 +162,7 @@ class RVConfig(BaseConfig):
     class_name: str = "RV"
     class_index: int = 5
     run_flag: str = "RV_Tier2_"
-    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/rv_tier2"
+    data_path: str = default_class_data_path("rv_tier2")
     n_epochs: int = 400
 
 
@@ -158,7 +172,7 @@ class PAConfig(BaseConfig):
     class_name: str = "PA"
     class_index: int = 7
     run_flag: str = "PA_Tier2_"
-    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/pa_tier2"
+    data_path: str = default_class_data_path("pa_tier2")
     n_epochs: int = 400
 
 
@@ -168,7 +182,7 @@ class PVConfig(BaseConfig):
     class_name: str = "PV"
     class_index: int = 10
     run_flag: str = "PV_Tier2_"
-    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/pv_tier2"
+    data_path: str = default_class_data_path("pv_tier2")
     n_epochs: int = 500  # More epochs for small structure
 
 
@@ -178,7 +192,7 @@ class LAAConfig(BaseConfig):
     class_name: str = "LAA"
     class_index: int = 8
     run_flag: str = "LAA_Tier2_"
-    data_path: str = "/scratch/project_2016517/JunjieCheng/dataset/laa_tier2"
+    data_path: str = default_class_data_path("laa_tier2")
     n_epochs: int = 500  # More epochs for small structure
 
 

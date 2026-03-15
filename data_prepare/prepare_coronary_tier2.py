@@ -13,9 +13,9 @@ Key Features:
 
 Usage:
     python prepare_coronary_tier2.py \
-        --images_dir /scratch/project_2016517/junjie/dataset/original/images \
-        --labels_dir /scratch/project_2016517/junjie/dataset/original/segmentations \
-        --output_dir /scratch/project_2016517/junjie/dataset/coronary_tier2 \
+        --images_dir /path/to/original/images \
+        --labels_dir /path/to/original/segmentations \
+        --output_dir /path/to/coronary_tier2 \
         --margin 20 \
         --target_resolution 256 \
         --n_workers 8

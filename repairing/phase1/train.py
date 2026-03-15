@@ -18,7 +18,12 @@ if project_root not in sys.path:
 import torch
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
-from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.loggers import CSVLogger
+
+try:
+    from pytorch_lightning.loggers import WandbLogger
+except ImportError:
+    WandbLogger = None
 
 # Handle distributed training: detect rank from SLURM or torchrun
 local_rank = int(os.environ.get('SLURM_LOCALID', os.environ.get('LOCAL_RANK', 0)))
@@ -28,10 +33,10 @@ world_size = int(os.environ.get('SLURM_NTASKS', os.environ.get('WORLD_SIZE', 1))
 if world_size > 1:
     print(f"[Rank {global_rank}/{world_size}, LocalRank {local_rank}] Distributed training detected")
 
-# WandB login for non-interactive sbatch jobs (only on rank 0)
-import wandb
-if global_rank == 0:
-    wandb.login(key="d6891a1bb4397a24519ef1b36091aa1b77ea67e1")
+try:
+    import wandb
+except ImportError:
+    wandb = None
 
 from lightning_module import CoronaryTier2LightningModule
 from near.datasets.coronary_tier2_dataset import CoronaryTier2Dataset
@@ -155,6 +160,34 @@ def load_config(config_path: str, class_name: str = None):
         return cfg_module.cfg
 
 
+def build_logger(args, cfg, base_path):
+    """Create a portable logger without embedding secrets in source code."""
+    logger_name = (args.logger or os.environ.get("NEAR_LOGGER", "csv")).lower()
+
+    if logger_name == "none":
+        return False
+
+    if logger_name == "wandb":
+        if WandbLogger is None or wandb is None:
+            print("[Logger] wandb requested but wandb is unavailable. Falling back to CSVLogger.")
+        else:
+            api_key = os.environ.get("WANDB_API_KEY")
+            if api_key and global_rank == 0:
+                wandb.login(key=api_key)
+            elif global_rank == 0 and not os.environ.get("WANDB_MODE"):
+                print("[Logger] WANDB_API_KEY not set. Falling back to CSVLogger.")
+                logger_name = "csv"
+
+            if logger_name == "wandb":
+                return WandbLogger(
+                    project=f"NeAR_v2_Tier2_{cfg['class_name']}",
+                    name=cfg['run_flag'],
+                    save_dir=base_path,
+                )
+
+    return CSVLogger(save_dir=base_path, name="metrics")
+
+
 def main(args):
     cfg = load_config(args.config, args.class_name)
     
@@ -167,6 +200,7 @@ def main(args):
     print(f"Data Path: {cfg['data_path']}")
     print(f"Use Appearance: {cfg.get('use_appearance', True)}")
     print(f"Use Context: {cfg.get('use_context', True)}")
+    print(f"Logger: {(args.logger or os.environ.get('NEAR_LOGGER', 'csv')).lower()}")
     print(f"{'='*70}\n")
     
     # Add timestamp to run flag
@@ -215,10 +249,7 @@ def main(args):
             print(f"Warning: Failed to load checkpoint: {e}")
     
     # Setup logger
-    wandb_logger = WandbLogger(
-        project=f"NeAR_v2_Tier2_{cfg['class_name']}", 
-        name=cfg['run_flag']
-    )
+    experiment_logger = build_logger(args, cfg, base_path)
     
     # Callbacks
     ckpt_cb = ModelCheckpoint(
@@ -240,7 +271,7 @@ def main(args):
     use_ddp = (isinstance(num_devices, int) and num_devices > 1) or num_devices == 'auto'
     
     trainer = Trainer(
-        logger=wandb_logger,
+        logger=experiment_logger,
         callbacks=[ckpt_cb, lr_monitor],
         max_epochs=cfg['n_epochs'],
         accelerator='gpu',
@@ -275,6 +306,8 @@ if __name__ == '__main__':
                         help='Path to config file')
     parser.add_argument('--class_name', type=str, default=None,
                         help='Class name to train (e.g., coronary, aorta, la, lv, ra, rv, pa, pv, laa, myocardium)')
+    parser.add_argument('--logger', type=str, default=None, choices=['csv', 'wandb', 'none'],
+                        help='Experiment logger to use (default: env NEAR_LOGGER or csv)')
     args = parser.parse_args()
     
     # Parse devices: can be int or "auto"
@@ -284,4 +317,3 @@ if __name__ == '__main__':
         args.devices = int(args.devices)
     
     main(args)
-

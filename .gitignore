@@ -1,66 +1,85 @@
-# Large training/inference outputs (should be stored separately)
-repairing/near_repairing/stage1_coronary/inference_results/
-repairing/near_repairing/stage1_coronary/checkpoints/*/training_loss.json
-*.pth
-*.ckpt
+# -----------------------------------------------------------------------------
+# Operating system and editor files
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
 
-# Logs (optional: comment out if you want to include small logs)
-*.log
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
-*.egg
-*.egg-info/
-dist/
-build/
-
-# Jupyter
-.ipynb_checkpoints/
-
-# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
-.DS_Store
-Thumbs.db
+# -----------------------------------------------------------------------------
+# Python caches, builds, and test artifacts
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+.Python
 
-# Data directories (adjust as needed)
-# data/
-# dataset/
+build/
+dist/
+.eggs/
+*.egg
+*.egg-info/
+pip-wheel-metadata/
 
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ipynb_checkpoints/
 
-# 忽略所有 wandb 目录
+# -----------------------------------------------------------------------------
+# Local environments
+# -----------------------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+
+# -----------------------------------------------------------------------------
+# Experiment tracking, logs, and job outputs
+# -----------------------------------------------------------------------------
 wandb/
-
-# 忽略所有 .out 文件
+*.log
 *.out
-
-# 忽略所有 .err 文件
 *.err
+
+# -----------------------------------------------------------------------------
+# Model checkpoints and container images
+# -----------------------------------------------------------------------------
+*.ckpt
+*.pth
+*.pt
+*.sif
+
+# -----------------------------------------------------------------------------
+# Local datasets and generated outputs
+# -----------------------------------------------------------------------------
+dataset/
+outputs/
+data/
+debug_output/
+output_vis/
+vis_3d/
+
+# -----------------------------------------------------------------------------
+# Generated array and medical-image artifacts
+# -----------------------------------------------------------------------------
+*.npy
+*.npz
+*.nii
 *.nii.gz
 
+# -----------------------------------------------------------------------------
+# Temporary office exports
+# -----------------------------------------------------------------------------
 *.doc
 *.docx
-
-# 1. 忽略所有 .txt 结尾的文件
-*.txt
-
-# 2. 但是，不要忽略（重新包含）requirements.txt
-!requirements.txt
-
-*.npy
-*.nii
-*.png
-*.csv
-*.pdf
-
-

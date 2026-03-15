@@ -174,8 +174,8 @@ def enforce_anatomical_constraints(final_mask):
     final_mask = filter_floating_structures(final_mask, source_cls=9, target_mask=target_mask, max_dist=6, name="Coronary-Myo/Ao")
     
     # Rule 1: Chamber Enclosure - DISABLED
-    # 原因：Phase 1 已经有很高的 Dice (0.99)，这个规则反而会破坏 LV
-    # 如果 Myocardium 预测不完整，会错误删除正确的 LV 预测
+    # Reason: Phase 1 already achieves very high Dice (~0.99) here, and this
+    # rule tended to damage valid LV predictions when the myocardium was incomplete.
     # if myo_mask.sum() > 0:
     #     myo_envelope = binary_dilation(myo_mask, iterations=2)
     #     pa_mask = get_class_mask(final_mask, 7)

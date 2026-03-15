@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Generate statistics for all Coronary Tier2 samples.
+Generate statistics for Tier2 samples.
 Computes voxel ratios before and after cropping.
 
 Usage:
-    python generate_tier2_stats.py --data_dir /path/to/coronary_tier2 --output stats.csv
+    python generate_tier2_stats.py --data_dir /path/to/class_tier2 --output stats.csv
 """
 
 import os
@@ -32,17 +32,20 @@ def process_single_sample(sample_dir):
         with open(params_path) as f:
             params = json.load(f)
         
-        # Load masks to verify
-        mask_coronary = np.load(sample_dir / "mask_coronary.npy")
+        # Load masks to verify (generic current format, with legacy fallback)
+        mask_path = sample_dir / "mask_target.npy"
+        if not mask_path.exists():
+            mask_path = sample_dir / "mask_coronary.npy"
+        mask_target = np.load(mask_path)
         mask_context = np.load(sample_dir / "mask_context.npy")
         
         # Calculate current voxel counts
-        coronary_voxels = int(mask_coronary.sum())
+        target_voxels = int(mask_target.sum())
         context_voxels = int(mask_context.sum())
-        total_voxels = mask_coronary.size
+        total_voxels = mask_target.size
         
         # Current ratio (after crop + resize)
-        current_ratio = coronary_voxels / total_voxels
+        current_ratio = target_voxels / total_voxels
         
         # Original ratio (from params)
         original_ratio = params.get("voxel_ratio_before", 0)
@@ -58,7 +61,7 @@ def process_single_sample(sample_dir):
             "original_ratio_pct": original_ratio * 100,
             "current_ratio_pct": current_ratio * 100,
             "improvement_factor": improvement,
-            "coronary_voxels": coronary_voxels,
+            "target_voxels": target_voxels,
             "context_voxels": context_voxels,
             "context_ratio_pct": context_voxels / total_voxels * 100
         }
@@ -71,7 +74,7 @@ def process_single_sample(sample_dir):
 def main():
     parser = argparse.ArgumentParser(description="Generate Tier2 statistics")
     parser.add_argument("--data_dir", type=str, required=True,
-                        help="Path to coronary_tier2 directory")
+                        help="Path to a class-specific Tier2 directory")
     parser.add_argument("--output", type=str, default="tier2_stats.csv",
                         help="Output CSV file path")
     parser.add_argument("--n_workers", type=int, default=8,
@@ -86,7 +89,7 @@ def main():
                           if d.is_dir() and (d / "crop_params.json").exists()])
     
     print(f"\n{'='*70}")
-    print(f"Generating Statistics for Coronary Tier2")
+    print("Generating Tier2 Statistics")
     print(f"{'='*70}")
     print(f"Data directory: {data_dir}")
     print(f"Found {len(sample_dirs)} samples")
@@ -123,13 +126,13 @@ def main():
     print("SUMMARY STATISTICS")
     print(f"{'='*70}")
     print(f"Total samples: {len(df)}")
-    print(f"\nOriginal Coronary Voxel Ratio (%):")
+    print(f"\nOriginal Target Voxel Ratio (%):")
     print(f"  Mean:   {df['original_ratio_pct'].mean():.4f}%")
     print(f"  Std:    {df['original_ratio_pct'].std():.4f}%")
     print(f"  Min:    {df['original_ratio_pct'].min():.4f}%")
     print(f"  Max:    {df['original_ratio_pct'].max():.4f}%")
     
-    print(f"\nCurrent Coronary Voxel Ratio (after crop+resize) (%):")
+    print(f"\nCurrent Target Voxel Ratio (after crop+resize) (%):")
     print(f"  Mean:   {df['current_ratio_pct'].mean():.4f}%")
     print(f"  Std:    {df['current_ratio_pct'].std():.4f}%")
     print(f"  Min:    {df['current_ratio_pct'].min():.4f}%")
@@ -145,21 +148,21 @@ def main():
     print(f"  Mean:   {df['context_ratio_pct'].mean():.2f}%")
     print(f"  Samples with context > 0: {(df['context_voxels'] > 0).sum()}/{len(df)}")
     
-    print(f"\nCoronary Voxel Count:")
-    print(f"  Mean:   {df['coronary_voxels'].mean():.0f}")
-    print(f"  Min:    {df['coronary_voxels'].min():.0f}")
-    print(f"  Max:    {df['coronary_voxels'].max():.0f}")
+    print(f"\nTarget Voxel Count:")
+    print(f"  Mean:   {df['target_voxels'].mean():.0f}")
+    print(f"  Min:    {df['target_voxels'].min():.0f}")
+    print(f"  Max:    {df['target_voxels'].max():.0f}")
     
     print(f"\n{'='*70}")
     
     # Also create a summary file
     summary_path = args.output.replace(".csv", "_summary.txt")
     with open(summary_path, "w") as f:
-        f.write(f"Coronary Tier2 Statistics Summary\n")
+        f.write("Tier2 Statistics Summary\n")
         f.write(f"{'='*50}\n\n")
         f.write(f"Total samples: {len(df)}\n\n")
-        f.write(f"Original Coronary Ratio: {df['original_ratio_pct'].mean():.4f}% ± {df['original_ratio_pct'].std():.4f}%\n")
-        f.write(f"Current Coronary Ratio:  {df['current_ratio_pct'].mean():.4f}% ± {df['current_ratio_pct'].std():.4f}%\n")
+        f.write(f"Original Target Ratio: {df['original_ratio_pct'].mean():.4f}% ± {df['original_ratio_pct'].std():.4f}%\n")
+        f.write(f"Current Target Ratio:  {df['current_ratio_pct'].mean():.4f}% ± {df['current_ratio_pct'].std():.4f}%\n")
         f.write(f"Improvement Factor:      {df['improvement_factor'].mean():.2f}x\n\n")
         f.write(f"Context mask coverage:   {(df['context_voxels'] > 0).sum()}/{len(df)} samples\n")
     

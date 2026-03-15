@@ -390,13 +390,13 @@ def process_class(class_name: str, config: Dict, case_ids: List[str], n_workers:
 def main():
     parser = argparse.ArgumentParser(description="Prepare Tier2 data for ALL cardiac classes")
     parser.add_argument("--images_dir", type=str, 
-                       default="/scratch/project_2016517/JunjieCheng/dataset/original/images",
+                       default=str(Path(__file__).resolve().parents[1] / "dataset" / "original" / "images"),
                        help="Directory of original CT images")
     parser.add_argument("--labels_dir", type=str,
-                       default="/scratch/project_2016517/JunjieCheng/dataset/original/segmentations",
+                       default=str(Path(__file__).resolve().parents[1] / "dataset" / "original" / "segmentations"),
                        help="Directory of segmentation labels")
     parser.add_argument("--output_dir", type=str,
-                       default="/scratch/project_2016517/JunjieCheng/dataset",
+                       default=str(Path(__file__).resolve().parents[1] / "dataset"),
                        help="Base output directory (class subdirs will be created)")
     parser.add_argument("--target_resolution", type=int, default=128,
                        help="Target resolution for resizing (default: 128)")

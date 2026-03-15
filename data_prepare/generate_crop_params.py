@@ -133,10 +133,10 @@ def get_case_ids(labels_dir: str):
 def main():
     parser = argparse.ArgumentParser(description="Generate crop_params.json only")
     parser.add_argument("--labels_dir", type=str,
-                        default="/scratch/project_2016517/JunjieCheng/dataset/original/segmentations",
+                        default=str(Path(__file__).resolve().parents[1] / "dataset" / "original" / "segmentations"),
                         help="Directory of segmentation labels")
     parser.add_argument("--output_base", type=str,
-                        default="/scratch/project_2016517/JunjieCheng/dataset",
+                        default=str(Path(__file__).resolve().parents[1] / "dataset"),
                         help="Base output directory")
     parser.add_argument("--class_name", type=str, default=None,
                         help="Specific class to process (e.g., 'Coronary')")

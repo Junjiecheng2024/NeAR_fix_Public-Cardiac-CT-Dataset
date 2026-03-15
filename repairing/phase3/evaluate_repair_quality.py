@@ -279,7 +279,7 @@ def process_case(args_tuple):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_root", required=True, help="Root of dataset e.g. /scratch/.../dataset")
+    parser.add_argument("--data_root", required=True, help="Root of dataset, e.g. /path/to/dataset")
     parser.add_argument("--gt_root", required=True, help="Folder containing original GT .nii.gz")
     parser.add_argument("--output_csv", required=True)
     parser.add_argument("--skip_hd95", action="store_true", help="Skip HD95/ASD calculation for faster evaluation")

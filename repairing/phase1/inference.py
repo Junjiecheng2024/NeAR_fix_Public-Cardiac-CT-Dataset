@@ -28,11 +28,15 @@ from near.datasets.coronary_tier2_dataset import CoronaryTier2Dataset
 from near.models.nn3d.model_shape_appearance import EmbeddingDecoderShapeAppearanceWithContext
 
 
-def load_config(path):
+def load_config(path, class_name=None):
     """Load config from Python file."""
     spec = importlib.util.spec_from_file_location("config", path)
     cfg_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cfg_module)
+
+    if class_name is not None and hasattr(cfg_module, "get_config"):
+        return cfg_module.get_config(class_name).to_dict()
+
     return cfg_module.cfg
 
 
@@ -287,6 +291,8 @@ def sliding_window_inference(
 def main():
     parser = argparse.ArgumentParser(description="NeAR v2.0 Tier2 Inference")
     parser.add_argument("--config", type=str, required=True, help="Config file path")
+    parser.add_argument("--class_name", type=str, default=None,
+                        help="Optional class name to load from config.py via get_config()")
     parser.add_argument("--checkpoint", type=str, required=True, help="Model checkpoint path")
     parser.add_argument("--output_dir", type=str, required=True, help="Output directory")
     parser.add_argument("--chunk_size", type=int, default=128, help="Chunk size for sliding window")
@@ -299,12 +305,14 @@ def main():
     args = parser.parse_args()
     
     # Load config
-    cfg = load_config(args.config)
+    cfg = load_config(args.config, args.class_name)
     
     print(f"\n{'='*70}")
     print("NeAR v2.0 Tier2 Inference")
     print(f"{'='*70}")
     print(f"Config: {args.config}")
+    if args.class_name is not None:
+        print(f"Class override: {args.class_name}")
     print(f"Checkpoint: {args.checkpoint}")
     print(f"Output: {args.output_dir}")
     print(f"{'='*70}\n")

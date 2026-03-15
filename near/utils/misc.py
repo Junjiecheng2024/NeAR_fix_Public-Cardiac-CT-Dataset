@@ -1,10 +1,7 @@
 import json
 from collections import OrderedDict
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
-
-from surface_distance import compute_surface_distances, compute_surface_dice_at_tolerance
 
 USE_GPU = True
 
@@ -96,11 +93,17 @@ class Metrics:
         return ret
 
     def plot(self, key, marker='-'):
+        import matplotlib.pyplot as plt
         plt.plot(self.metrics[key], marker)
 
 
 def surface_dice(y_pred, y_true):
     '''a.k.a. Normalized Surface Distance (NSD)'''
+    from surface_distance import (
+        compute_surface_distances,
+        compute_surface_dice_at_tolerance,
+    )
+
     mask_gt, mask_pred = y_true, y_pred
     surface_distances = compute_surface_distances(
         mask_gt, mask_pred, spacing_mm=(1, 1, 1))
